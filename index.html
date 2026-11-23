@@ -349,11 +349,19 @@ function num(s){
   else s=s.replace(',','.');
   return parseFloat(s);
 }
+// accepts "KALFIT;612;1700", or the raw sample lists ("KALFIT;0.5 kcal\n1.2 kcal…;…" — summed), or no prefix at all ("612, 1700")
+function sumNums(t){const m=String(t).match(/\d[\d,]*(?:\.\d+)?/g)||[];return m.length?m.reduce((s,x)=>s+(num(x)||0),0):NaN}
 function parseFit(txt){
-  const m=String(txt||'').match(/KALFIT\s*;([^;\n]*);([^;\n]*)(?:;([^;\n]*))?/i);if(!m)return null;
-  const act=num(m[1]),rest=num(m[2]);
-  let d=m[3]&&m[3].match(/(\d{4})-(\d{2})-(\d{2})/)?m[3].match(/\d{4}-\d{2}-\d{2}/)[0]:dk(new Date());
+  txt=String(txt||'').replace(/[‎‏‪-‮⁦-⁩]/g,'');
+  let d=(txt.match(/\d{4}-\d{2}-\d{2}/)||[])[0]||dk(new Date());txt=txt.replace(/\d{4}-\d{2}-\d{2}/g,' ');
+  let act,rest;
+  const k=txt.search(/KALFIT/i);
+  if(k>=0){const parts=txt.slice(k+6).split(';').filter((x,i)=>i>0||x.trim());const p=parts.length&&!parts[0].trim()?parts.slice(1):parts;
+    act=sumNums(p[0]||'');rest=sumNums(p[1]||'')}
+  else{const n=(txt.match(/\d[\d,]*(?:\.\d+)?/g)||[]).map(num).filter(x=>!isNaN(x));
+    if(n.length<1||n.length>2)return null;act=n[0];rest=n.length>1?n[1]:NaN}
   if(isNaN(act)&&isNaN(rest))return null;
+  if((act||0)>6000||(rest||0)>6000)return null;   // not calories
   return {d,act:isNaN(act)?0:act,rest:isNaN(rest)?0:rest};
 }
 function putFit(d,act,rest){FIT[d]={act:r0(act),rest:r0(rest),t:new Date().toTimeString().slice(0,5)};LS.set('kal-fit',FIT)}
@@ -1212,7 +1220,7 @@ function openSet(){
       <button class="li" id="sRes"><i>${ic('restore')}</i><div class="t">שחזור מגיבוי</div></button>
     </div>
     <input type="file" id="resF" accept=".json,application/json" hidden>
-    <p class="note" style="text-align:center;margin-top:16px">גרסה 14</p>`;
+    <p class="note" style="text-align:center;margin-top:16px">גרסה 15</p>`;
   open('#shSet');
   $('#sProf').onclick=()=>{close('#shSet');openOnb(1)};
   $('#sTest').onclick=async()=>{const bt=$('#sTest');if(bt.disabled)return;bt.disabled=true;S.key=$('#sKey').value.trim();LS.set('kal-set',S);const o=$('#sTestOut');o.textContent='בודק…';await testConn(o);bt.disabled=false};
