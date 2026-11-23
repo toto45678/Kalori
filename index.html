@@ -395,15 +395,17 @@ function openHelp(){
   $('#addPn').innerHTML=`<h2>⌚ חיבור לאפליקציית הבריאות</h2>
     <p class="note">אפליקציה מהאתר לא יכולה לקרוא את הבריאות ישירות, אז נבנה פעם אחת קיצור דרך קטן שקורא את המספרים ומעתיק אותם. בערך 3 דקות.</p>
     <ol class="sc">
-      <li>פתח את אפליקציית <b>קיצורים</b> (Shortcuts) ולחץ <b>+</b></li>
-      <li>קרא לקיצור בדיוק: <code>${esc(S.sc)}</code></li>
-      <li>הוסף פעולה <b>חפש דגימות בריאות</b> (Find Health Samples): סוג = <b>אנרגיה פעילה</b> (Active Energy), תאריך התחלה = <b>היום</b> (Today)</li>
-      <li>הוסף <b>חשב סטטיסטיקה</b> (Calculate Statistics): <b>סכום</b> (Sum)</li>
-      <li>שוב <b>חפש דגימות בריאות</b>: סוג = <b>אנרגיה במנוחה</b> (Resting Energy), היום</li>
-      <li>שוב <b>חשב סטטיסטיקה</b>: <b>סכום</b>. אם הוא בוחר אוטומטית את התוצאה הקודמת, לחץ ובחר את דגימות המנוחה</li>
-      <li>הוסף <b>טקסט</b> (Text) וכתוב בו: <code>KALFIT;</code> ואז את המשתנה <b>סטטיסטיקה</b> הראשון, <code>;</code> ואת השני</li>
-      <li>הוסף <b>העתק ללוח</b> (Copy to Clipboard). סיימת!</li>
+      <li>פתח את אפליקציית <b>קיצורים</b> (Shortcuts) ← לשונית <b>קיצורים</b> ← <b>+</b> למעלה</li>
+      <li>לחץ על השם למעלה ← <b>שנה שם</b> ← כתוב בדיוק: <code>${esc(S.sc)}</code></li>
+      <li>בשורת החיפוש למטה כתוב <b>בריאות</b> (Health) ובחר <b>מצא דגימות בריאות</b> (Find Health Samples)</li>
+      <li>בפעולה: לחץ על סוג הדגימה (למשל "צעדים") ← בחר <b>אנרגיה פעילה</b> (Active Energy)</li>
+      <li>לחץ <b>הוסף מסנן</b> (Add Filter) ← <b>תאריך התחלה</b> (Start Date) ← <b>היום</b> (is today)</li>
+      <li>חזור על שלבים 3-5, אבל עם <b>אנרגיה במנוחה</b> (Resting Energy)</li>
+      <li>חפש והוסף <b>טקסט</b> (Text). כתוב בו <code>KALFIT;</code> ← לחץ <b>בחר משתנה</b> ← בחר את <b>דגימות הבריאות</b> הראשונות ← כתוב <code>;</code> ← בחר את השניות</li>
+      <li>חפש והוסף <b>העתק ללוח</b> (Copy to Clipboard)</li>
+      <li>לחץ <b>▶</b> פעם אחת ← <b>אפשר</b> גישה לבריאות. זהו!</li>
     </ol>
+    <p class="note">לא צריך לסכם — האפליקציה מחברת לבד את כל המספרים שהקיצור מעתיק.</p>
     <p class="note">בפעם הראשונה האייפון ישאל אם לתת גישה לבריאות — לחץ אפשר.<br>
     אחרי שהקיצור רץ, חזור לכאן ולחץ <b>📋 הדבק נתונים</b>.<br>
     אין לך שעון אפל? "אנרגיה במנוחה" תהיה ריקה, והאפליקציה תחשב אותה לפי הפרופיל בהגדרות.</p>
@@ -1220,7 +1222,7 @@ function openSet(){
       <button class="li" id="sRes"><i>${ic('restore')}</i><div class="t">שחזור מגיבוי</div></button>
     </div>
     <input type="file" id="resF" accept=".json,application/json" hidden>
-    <p class="note" style="text-align:center;margin-top:16px">גרסה 15</p>`;
+    <p class="note" style="text-align:center;margin-top:16px">גרסה 16</p>`;
   open('#shSet');
   $('#sProf').onclick=()=>{close('#shSet');openOnb(1)};
   $('#sTest').onclick=async()=>{const bt=$('#sTest');if(bt.disabled)return;bt.disabled=true;S.key=$('#sKey').value.trim();LS.set('kal-set',S);const o=$('#sTestOut');o.textContent='בודק…';await testConn(o);bt.disabled=false};
