@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>קלוריות</title>
 <meta name="theme-color" content="#16a34a">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,7 +15,9 @@
 :root{--bg:#f4f6f3;--card:#fff;--ink:#1c2420;--mut:#6b766f;--line:#e3e8e4;--acc:#16a34a;--acc2:#dcfce7;--warn:#dc2626;
  --kc:#16a34a;--pr:#2563eb;--cb:#d97706;--ft:#db2777;--r:16px}
 @media (prefers-color-scheme:dark){:root{--bg:#101412;--card:#1a201d;--ink:#e8eeea;--mut:#93a099;--line:#2a332e;--acc2:#163222}}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:pan-y}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+input,select,textarea{font-size:16px!important}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
 body{padding:env(safe-area-inset-top) 0 calc(96px + env(safe-area-inset-bottom))}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -573,6 +575,15 @@ $('#bHist').onclick=()=>{
   $('#histPn').querySelectorAll('tr[data-d]').forEach(tr=>tr.onclick=()=>{day=tr.dataset.d;close('#shHist');render()});
   $('#hC').onclick=()=>close('#shHist');$('#hCsv').onclick=exportCsv;
 };
+
+/* ---------- no zoom at all: pinch, double tap, input focus ---------- */
+['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
+document.addEventListener('touchmove',e=>{if(e.touches.length>1||(e.scale&&e.scale!==1))e.preventDefault()},{passive:false});
+let lastTouch=0;
+document.addEventListener('touchend',e=>{const n=Date.now();
+  if(n-lastTouch<350&&!e.target.closest('input,textarea,select')){e.preventDefault();e.target.click&&e.target.closest('button,a,.it,tr,[data-d]')&&e.target.click()}
+  lastTouch=n},{passive:false});
+document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
 
 /* ---------- start ---------- */
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)render()});
