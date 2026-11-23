@@ -568,7 +568,8 @@ function openSet(){
     <h2 style="margin-top:22px">גיבוי</h2>
     <div class="row"><button class="btn sec" id="sCsv">📄 טבלה (CSV)</button><button class="btn sec" id="sBak">💾 גיבוי</button></div>
     <button class="btn sec" id="sRes" style="width:100%;margin-top:8px">📥 שחזר מגיבוי</button>
-    <input type="file" id="resF" accept=".json,application/json" hidden>`;
+    <input type="file" id="resF" accept=".json,application/json" hidden>
+    <p class="note" style="text-align:center;margin-top:16px">גרסה 6</p>`;
   open('#shSet');
   $('#sC').onclick=()=>close('#shSet');
   $('#sSex').onclick=ev=>{const b=ev.target.closest('button');if(!b)return;$('#sSex').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z===b))};
