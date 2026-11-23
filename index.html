@@ -38,7 +38,7 @@ a{color:var(--acc)}
 .top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 2px 0}
 .top .hi{font-size:1.35rem;font-weight:700;letter-spacing:-.01em}
 .top .dt{color:var(--mut);font-size:.9rem}
-.av{width:44px;height:44px;border-radius:50%;border:0;background:linear-gradient(135deg,#32d583,#12b76a);color:#fff;font-weight:700;font-size:1.1rem;box-shadow:0 4px 12px rgba(18,183,106,.3)}
+.av{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:0;background:linear-gradient(135deg,#32d583,#12b76a);color:#fff;font-weight:700;font-size:1.1rem;box-shadow:0 4px 12px rgba(18,183,106,.3)}
 /* week strip */
 .week{display:flex;align-items:center;gap:4px;margin-top:14px}
 .week .wa{flex:none;width:28px;height:52px;border:0;background:none;color:var(--mut);font-size:1.3rem}
@@ -85,7 +85,7 @@ a{color:var(--acc)}
 .meal .mh .e{font-size:1.25rem}
 .meal .mh h3{margin:0;font-size:1.02rem;flex:1}
 .meal .mh .k{color:var(--mut);font-size:.88rem}
-.add{width:34px;height:34px;border-radius:50%;border:0;background:var(--acc2);color:var(--accd);font-size:1.35rem;line-height:1;display:grid;place-items:center;flex:none}
+.add{width:34px;height:34px;border-radius:50%;border:0;background:var(--acc2);color:var(--accd);display:grid;place-items:center;flex:none}
 .meal .none{color:var(--mut);font-size:.86rem;padding:2px 0 10px}
 .it{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
 .it img{width:48px;height:48px;border-radius:14px;object-fit:cover;flex:none;background:var(--soft)}
@@ -101,14 +101,14 @@ a{color:var(--acc)}
   border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
 .tabs{}@media (prefers-color-scheme:dark){.tabs{background:rgba(22,27,25,.9)}}
 .tabs button{flex:1;max-width:110px;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:.7rem;color:var(--mut);padding:4px 0;white-space:nowrap}
-.tabs button i{font-style:normal;font-size:1.3rem;line-height:1.25;filter:grayscale(1);opacity:.75}
+.tabs button i{font-style:normal}
 .tabs button.on{color:var(--ink);font-weight:600}
-.tabs button.on i{filter:none;opacity:1}
+.tabs button.on i{color:var(--accd)}
 .tabs .cam{color:var(--accd);font-weight:600}
 .tabs .cam i{width:60px;height:60px;margin-top:-28px;border-radius:50%;background:linear-gradient(135deg,#32d583,#12b76a);display:grid;place-items:center;font-size:1.55rem;
-  box-shadow:0 8px 20px rgba(18,183,106,.4);border:4px solid var(--bg);filter:none;opacity:1}
+  box-shadow:0 8px 20px rgba(18,183,106,.4);border:4px solid var(--bg);color:#fff}
 /* buttons + forms */
-.btn{border:0;border-radius:14px;padding:13px 16px;font-weight:600;background:var(--acc);color:#fff;box-shadow:0 2px 8px rgba(18,183,106,.25)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:14px;padding:13px 16px;font-weight:600;background:var(--acc);color:#fff;box-shadow:0 2px 8px rgba(18,183,106,.25)}
 .btn.sec{background:var(--soft);color:var(--ink);box-shadow:none}
 .btn.del{background:var(--warn2);color:var(--warn);box-shadow:none}
 .btn.w{width:100%}
@@ -169,10 +169,25 @@ ol.sc li{margin:7px 0;font-size:.93rem}
 code{background:var(--soft);border-radius:6px;padding:1px 6px;font-size:.88rem;direction:ltr;unicode-bidi:isolate}
 .toast{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translate(-50%,-8px);background:var(--ink);color:var(--card);padding:11px 18px;border-radius:14px;z-index:20;font-size:.9rem;opacity:0;transition:.25s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.2);max-width:88vw;text-align:center}
 .toast.on{opacity:1;transform:translate(-50%,0)}
+.svg{display:block;flex:none}
+.mi{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;background:var(--mb);color:var(--mf);flex:none}
+@media (prefers-color-scheme:dark){.mi{background:color-mix(in srgb,var(--mf) 22%,transparent)}.onb .hero2,.tile i{filter:saturate(1.1)}}
+.it .ph{background:none}
+.it .ph .mi{width:48px;height:48px;border-radius:14px}
+.burnC .ic.fl{background:#fff4ed;color:#ec4a0a}.burnC .ic.wr{background:var(--warn2);color:var(--warn)}.burnC .ic.wt{background:#e0f2fe;color:#0086c9}
+@media (prefers-color-scheme:dark){.burnC .ic.fl{background:#3a1d0e}.burnC .ic.wt{background:#0b2a3d}}
+.pill{display:inline-flex;align-items:center;gap:5px}
+.pill.ib2{padding:8px 10px;color:var(--mut)}
+.chips button{display:inline-flex;align-items:center;gap:6px}
+.tile i{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:var(--tb);color:var(--tf);margin-bottom:6px}
+h3.sub{display:flex;align-items:center;gap:6px}
+.fr .nm b{display:flex;align-items:center;gap:6px}
+.grp .li i{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:var(--card);color:var(--accd)}
+.tabs button i{display:grid;place-items:center;height:30px}
 /* add sheet */
 .srch{position:relative;margin-top:6px}
 .srch input{padding-right:42px}
-.srch:before{content:"🔍";position:absolute;right:14px;top:50%;transform:translateY(-38%);font-size:.95rem;opacity:.6;pointer-events:none}
+.srch>i{position:absolute;right:14px;top:50%;transform:translateY(-38%);color:var(--mut);pointer-events:none}
 .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
 .tile{border:0;background:var(--soft);border-radius:18px;padding:14px 12px;text-align:right;display:flex;flex-direction:column;gap:2px}
 .tile i{font-style:normal;font-size:1.4rem}
@@ -196,7 +211,7 @@ code{background:var(--soft);border-radius:6px;padding:1px 6px;font-size:.88rem;d
 .onb .dots{display:flex;gap:6px;justify-content:center;margin:4px 0 18px}
 .onb .dots i{width:8px;height:8px;border-radius:8px;background:var(--line)}
 .onb .dots i.on{width:22px;background:var(--acc)}
-.onb .hero2{font-size:3.4rem;text-align:center;margin:18px 0 4px}
+.onb .hero2{width:96px;height:96px;border-radius:32px;margin:18px auto 14px;display:grid;place-items:center;background:var(--hb);color:var(--hf)}
 .onb h1{font-size:1.6rem;text-align:center;margin:0 0 6px;letter-spacing:-.02em}
 .onb p.lead{text-align:center;color:var(--mut);margin:0 0 18px}
 .onb .grow{flex:1}
@@ -220,7 +235,7 @@ code{background:var(--soft);border-radius:6px;padding:1px 6px;font-size:.88rem;d
 <body>
 <div class="wrap">
   <div class="top"><div><div class="hi" id="hi">שלום</div><div class="dt" id="dTitle"></div></div>
-    <button class="av" id="bAv" aria-label="הגדרות">🙂</button></div>
+    <button class="av" id="bAv" aria-label="הגדרות"></button></div>
   <div class="week" id="week"></div>
   <div class="card hero">
     <div class="heroRow">
@@ -244,21 +259,21 @@ code{background:var(--soft);border-radius:6px;padding:1px 6px;font-size:.88rem;d
 </div>
 
 <nav class="tabs">
-  <button id="bToday" class="on"><i>🏠</i>יומן</button>
-  <button id="bHist"><i>📊</i>היסטוריה</button>
-  <button id="bCam" class="cam"><i>📷</i>צלם</button>
-  <button id="bTxt"><i>✏️</i>הוסף</button>
-  <button id="bSet"><i>⚙️</i>הגדרות</button>
+  <button id="bToday" class="on"><i data-ic="book"></i>יומן</button>
+  <button id="bHist"><i data-ic="chart"></i>היסטוריה</button>
+  <button id="bCam" class="cam"><i data-ic="camera"></i>צלם</button>
+  <button id="bTxt"><i data-ic="plus"></i>הוסף</button>
+  <button id="bSet"><i data-ic="sliders"></i>הגדרות</button>
 </nav>
 <input type="file" id="file" accept="image/*" capture="environment" hidden>
 
 <!-- add / review -->
-<div class="sheet" id="shAdd"><div class="pn"><button class="shx" aria-label="סגור">✕</button><div id="addPn"></div></div></div>
+<div class="sheet" id="shAdd"><div class="pn"><button class="shx" aria-label="סגור" data-ic="x"></button><div id="addPn"></div></div></div>
 <!-- settings -->
-<div class="sheet" id="shSet"><div class="pn"><button class="shx" aria-label="סגור">✕</button><div id="setPn"></div></div></div>
+<div class="sheet" id="shSet"><div class="pn"><button class="shx" aria-label="סגור" data-ic="x"></button><div id="setPn"></div></div></div>
 <!-- history -->
 <div class="sheet full" id="shOnb"><div class="pn"><div id="onbPn"></div></div></div>
-<div class="sheet" id="shHist"><div class="pn"><button class="shx" aria-label="סגור">✕</button><div id="histPn"></div></div></div>
+<div class="sheet" id="shHist"><div class="pn"><button class="shx" aria-label="סגור" data-ic="x"></button><div id="histPn"></div></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -306,14 +321,14 @@ function renderBurn(t){
   const el=$('#burn'),bu=burnOf(day),today=day===dk(new Date());
   if(bu&&!bu.noRest){
     const df=bu.tot-t.kcal;
-    el.innerHTML=`<div class="card burnC"><div class="ic">${df>=0?'🔥':'⚠️'}</div>
+    el.innerHTML=`<div class="card burnC"><div class="ic ${df>=0?'fl':'wr'}">${ic(df>=0?'flame':'warn',24)}</div>
       <div class="tx"><span class="mut">${df>=0?'גירעון':'עודף'}${today?' עד עכשיו':''}</span><b class="${df>=0?'ok':'bad'}">${r0(Math.abs(df)).toLocaleString()} קל׳</b>
       <span class="mut">שרפת ${r0(bu.tot).toLocaleString()}${bu.restEst?' (מנוחה בחישוב)':''}${bu.t?' · עודכן '+bu.t:''}</span></div>
-      <div class="bt">${today?'<button class="pill g" id="bSync">⌚ סנכרן</button>':''}<button class="pill" id="bFitMan">✏️</button></div></div>`;
+      <div class="bt">${today?`<button class="pill g" id="bSync">${ic('watch',17)} סנכרן</button>`:''}<button class="pill ib2" id="bFitMan" aria-label="הזן ידנית">${ic('pencil',17)}</button></div></div>`;
   }else{
-    el.innerHTML=`<div class="card burnC"><div class="ic">⌚</div>
+    el.innerHTML=`<div class="card burnC"><div class="ic wt">${ic('watch',24)}</div>
       <div class="tx"><b style="font-size:.95rem">כמה שרפת היום?</b><span class="mut">${bu&&bu.noRest?'פעילות '+r0(bu.act)+' · הוסף פרופיל לחישוב גירעון':'חבר את השעון כדי לראות גירעון'}</span></div>
-      <div class="bt">${today?'<button class="pill g" id="bSync">חבר</button>':''}<button class="pill" id="bFitMan">✏️</button></div></div>`;
+      <div class="bt">${today?'<button class="pill g" id="bSync">חבר</button>':''}<button class="pill ib2" id="bFitMan" aria-label="הזן ידנית">${ic('pencil',17)}</button></div></div>`;
   }
   if($('#bSync'))$('#bSync').onclick=syncFit;
   $('#bFitMan').onclick=()=>openFitSheet(false);
@@ -346,14 +361,14 @@ function openFitSheet(fromShortcut){
   const f=FIT[day]||{};
   $('#addPn').innerHTML=`<h2>⌚ קלוריות שנשרפו</h2>
     ${fromShortcut?`<p class="note">קיצור הדרך העתיק את הנתונים. לחץ על הכפתור ואז על "הדבק" שקופץ.</p>
-      <button class="btn" id="fPaste" style="width:100%;font-size:1.1rem;padding:16px">📋 הדבק נתונים</button>`:''}
+      <button class="btn" id="fPaste" style="width:100%;font-size:1.1rem;padding:16px">הדבק נתונים</button>`:''}
     <div class="g2" style="margin-top:12px">
       <label class="f" style="margin:0">פעילות (אנרגיה פעילה)<input class="i" type="number" inputmode="numeric" id="fAct" value="${f.act??''}"></label>
       <label class="f" style="margin:0">מנוחה (ריק = חישוב)<input class="i" type="number" inputmode="numeric" id="fRest" value="${f.rest||''}"></label>
     </div>
     <label class="f">או הדבק כאן את הטקסט מקיצור הדרך<input class="i" id="fTxt" placeholder="KALFIT;…" dir="ltr"></label>
     <div class="row" style="margin-top:14px"><button class="btn sec" id="fC">ביטול</button><button class="btn" id="fOk">שמור</button></div>
-    ${day===dk(new Date())?'<button class="btn sec" id="fHelp" style="width:100%;margin-top:8px">❔ איך בונים את קיצור הדרך</button>':''}`;
+    ${day===dk(new Date())?'<button class="btn sec" id="fHelp" style="width:100%;margin-top:8px">איך בונים את קיצור הדרך</button>':''}`;
   open('#shAdd');
   const fill=o=>{$('#fAct').value=r0(o.act);$('#fRest').value=o.rest?r0(o.rest):''};
   $('#fTxt').oninput=()=>{const o=parseFit($('#fTxt').value);if(o)fill(o)};
@@ -391,8 +406,46 @@ function openHelp(){
   $('#hRun').onclick=()=>{S.sc=$('#hName').value.trim()||S.sc;S.scReady=1;LS.set('kal-set',S);close('#shAdd');syncFit()};
 }
 
+/* ---------- icon set (own drawings, 24×24, round strokes) ---------- */
+const IC={
+ book:'<path d="M5 4.5h10.5A3.5 3.5 0 0 1 19 8v12.5H8.5A3.5 3.5 0 0 1 5 17z"/><path d="M5 17a3.5 3.5 0 0 1 3.5-3.5H19"/><path d="M9 8.5h6"/>',
+ chart:'<path d="M4 20h16"/><path d="M7.5 16.5v-5"/><path d="M12 16.5V7"/><path d="M16.5 16.5v-7.5"/>',
+ camera:'<path d="M3.5 8.5a2 2 0 0 1 2-2h2.2l1.6-2.5h5.4l1.6 2.5h2.2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.8" r="3.6"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ sliders:'<path d="M4 7h9M18 7h2M4 17h4M13 17h7"/><circle cx="15.5" cy="7" r="2.3"/><circle cx="10.5" cy="17" r="2.3"/>',
+ coffee:'<path d="M4.5 9.5h11v4.5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"/><path d="M15.5 10.5h1.3a2.6 2.6 0 0 1 0 5.2h-1.6"/><path d="M8.5 3.5c-.9 1 .9 2 0 3M12 3.5c-.9 1 .9 2 0 3"/>',
+ salad:'<path d="M3 12h18a9 8 0 0 1-18 0z"/><path d="M7 12a3.4 3.4 0 0 1 5.6-2.6"/><path d="M11.5 12a4.2 4.2 0 0 1 7-3.1"/><path d="M8.6 8.2 7.5 5.6M14.5 7l.8-2.6"/>',
+ dinner:'<path d="M6 3v6.5a2 2 0 0 0 4 0V3M8 3v18"/><path d="M18 21V3c-2.4 1.6-3.6 5-3.6 8.6h3.6"/>',
+ apple:'<path d="M12 7.6c-1.8-1.4-7-1.3-7 4.8 0 4.1 2.9 8.6 5 8.6.9 0 1.3-.5 2-.5s1.1.5 2 .5c2.1 0 5-4.5 5-8.6 0-6.1-5.2-6.2-7-4.8z"/><path d="M12 7.6c-.2-2 .8-3.6 3-4.4"/>',
+ scan:'<path d="M4 8.5V6.5a2.5 2.5 0 0 1 2.5-2.5h2M15.5 4h2A2.5 2.5 0 0 1 20 6.5v2M20 15.5v2a2.5 2.5 0 0 1-2.5 2.5h-2M8.5 20h-2A2.5 2.5 0 0 1 4 17.5v-2"/><path d="M8 9h8M8 12h8M8 15h5"/>',
+ chat:'<path d="M5.5 4.5h13a2.5 2.5 0 0 1 2.5 2.5v7.5a2.5 2.5 0 0 1-2.5 2.5h-6.5l-4.5 3.2V17H5.5A2.5 2.5 0 0 1 3 14.5V7a2.5 2.5 0 0 1 2.5-2.5z"/><path d="M8 9.5h8M8 12.5h5"/>',
+ pencil:'<path d="M4.5 19.5l.9-4.1L15.6 5.2a2 2 0 0 1 2.8 0l.4.4a2 2 0 0 1 0 2.8L8.6 18.6z"/><path d="M13.8 7l3.2 3.2"/>',
+ flame:'<path d="M12 3c.8 3.2 5.5 5.2 5.5 10.2A5.5 5.5 0 0 1 6.5 13.2c0-2.2 1-3.8 2.2-4.8 0 2.1 1 3.2 2.1 3.4-.3-3.2-.4-5.8 1.2-8.8z"/>',
+ watch:'<rect x="6.5" y="6" width="11" height="12" rx="3"/><path d="M9 6l.8-3h4.4L15 6M9 18l.8 3h4.4L15 18"/><path d="M12 9.5V12l1.6 1.2"/>',
+ star:'<path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/>',
+ repeat:'<path d="M17 3.5l3 3-3 3"/><path d="M4 11.5v-1.5a3.5 3.5 0 0 1 3.5-3.5H20"/><path d="M7 20.5l-3-3 3-3"/><path d="M20 12.5V14a3.5 3.5 0 0 1-3.5 3.5H4"/>',
+ sparkle:'<path d="M11 3.5l1.7 4.8 4.8 1.7-4.8 1.7L11 16.5l-1.7-4.8L4.5 10l4.8-1.7z"/><path d="M18 14.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>',
+ target:'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.8"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/>',
+ search:'<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.4-4.4"/>',
+ x:'<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
+ user:'<circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/>',
+ share:'<path d="M12 3.5v11.5M8 7.5l4-4 4 4"/><path d="M5.5 12v6a2.5 2.5 0 0 0 2.5 2.5h8a2.5 2.5 0 0 0 2.5-2.5v-6"/>',
+ table:'<rect x="4" y="4" width="16" height="16" rx="2.5"/><path d="M4 9.5h16M4 14.8h16M10 9.5V20"/>',
+ save:'<path d="M12 4v10.5M8 10.5l4 4 4-4"/><path d="M5 19.5h14"/>',
+ restore:'<path d="M12 20V9.5M8 13.5l4-4 4 4"/><path d="M5 4.5h14"/>',
+ heart:'<path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.3a4.3 4.3 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z"/>',
+ ruler:'<path d="M3.5 15.5l12-12 5 5-12 12z"/><path d="M7.5 11.5l1.8 1.8M10 9l1.2 1.2M12.5 6.5l1.8 1.8"/>',
+ run:'<circle cx="14.5" cy="4.8" r="1.8"/><path d="M6 20.5l3.6-4.2 2.4 1.7 1.6-4.5 3.4 2.5h2.5"/><path d="M8 10.5l3.2-2.3 3.6 1.4-1.2 4.4"/>',
+ bowl:'<path d="M3 11.5h18a9 8 0 0 1-18 0z"/><path d="M8 11.5c0-2.2 1.8-4 4-4s4 1.8 4 4"/><path d="M12 7.5V5"/>',
+ warn:'<path d="M12 4l9 16H3z"/><path d="M12 10v4.5M12 17.5v.01"/>',
+ check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>'
+};
+function ic(n,sz=22,sw=1.9){return `<svg class="svg" width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||''}</svg>`}
+// meal look: icon + its own colour pair
+const MIC={'בוקר':['coffee','#fef0c7','#dc6803'],'צהריים':['salad','#dcfae6','#079455'],'ערב':['dinner','#e0eaff','#444ce7'],'נשנוש':['apple','#fee4e2','#d92d20']};
+function mealIc(m,sz=22){const [n,bg,fg]=MIC[m];return `<span class="mi" style="--mb:${bg};--mf:${fg}">${ic(n,sz)}</span>`}
 /* ---------- main render ---------- */
-const MEMO={'בוקר':'☕','צהריים':'🥗','ערב':'🍽️','נשנוש':'🍎'};
+
 let weekOff=0;
 function greet(){const h=new Date().getHours();return h<5?'לילה טוב':h<12?'בוקר טוב':h<17?'צהריים טובים':h<22?'ערב טוב':'לילה טוב'}
 function miniRing(p,over,sel){const c=2*Math.PI*11,col=over?'#f04438':sel?'#6ce9a6':'#12b76a';
@@ -413,7 +466,7 @@ function render(){
   const today=dk(new Date()),y=new Date();y.setDate(y.getDate()-1);
   const dd=new Date(day+'T12:00');
   $('#hi').textContent=greet()+(S.name?', '+S.name:'');
-  $('#bAv').textContent=S.name?S.name.trim()[0]:'🙂';
+  if(S.name)$('#bAv').textContent=S.name.trim()[0];else $('#bAv').innerHTML=ic('user',22,2);
   $('#dTitle').textContent=(day===today?'היום, ':day===dk(y)?'אתמול, ':'')+dd.toLocaleDateString('he-IL',{weekday:day===today||day===dk(y)?undefined:'long',day:'numeric',month:'long'});
   renderWeek();
   const list=DB[day]||[],t=totals(list),g=S.goal,left=g.kcal-t.kcal;
@@ -430,17 +483,17 @@ function render(){
     <div class="v">${r0(t[k])}<span> / ${r0(g[k])} ג׳</span></div></div>`).join('');
   renderBurn(t);
   let h='';
-  if(!(S.prof&&S.prof.age>0)&&!list.length)h+=`<button class="card setup" id="bSetup"><span style="font-size:1.8rem">🎯</span>
-    <span><b style="display:block">הגדר יעדים אישיים</b><span style="font-size:.85rem">דקה אחת — ונחשב לך יעד קלוריות וחלבון</span></span></button>`;
+  if(!(S.prof&&S.prof.age>0)&&!list.length)h+=`<button class="card setup" id="bSetup">
+    <span class="mi" style="--mb:#fff;--mf:#039855;width:48px;height:48px">${ic('target',26)}</span><span><b style="display:block">הגדר יעדים אישיים</b><span style="font-size:.85rem">דקה אחת — ונחשב לך יעד קלוריות וחלבון</span></span></button>`;
   for(const m of MEALS){
     const es=list.map((e,i)=>[e,i]).filter(([e])=>e.meal===m);
     const mt=totals(es.map(x=>x[0]));
-    h+=`<div class="card meal"><div class="mh"><span class="e">${MEMO[m]}</span><h3>${m}</h3><span class="k">${es.length?r0(mt.kcal)+' קל׳':''}</span>
-      <button class="add" data-m="${m}" aria-label="הוסף ל${m}">+</button></div>`;
+    h+=`<div class="card meal"><div class="mh">${mealIc(m)}<h3>${m}</h3><span class="k">${es.length?r0(mt.kcal)+' קל׳':''}</span>
+      <button class="add" data-m="${m}" aria-label="הוסף ל${m}">${ic('plus',18,2.4)}</button></div>`;
     if(!es.length)h+=`<div class="none">עוד לא נרשם</div>`;
     for(const [e,i] of es){
       const et=totals([e]);
-      h+=`<div class="it" data-i="${i}">${e.img?`<img src="${e.img}" alt="">`:`<div class="ph">${MEMO[m]}</div>`}
+      h+=`<div class="it" data-i="${i}">${e.img?`<img src="${e.img}" alt="">`:`<div class="ph">${mealIc(m,20)}</div>`}
         <div class="nm"><b>${esc(e.items.map(x=>x.name).join(', ')||'ארוחה')}</b>
         <span class="mut">ח ${r0(et.protein)} · פ ${r0(et.carbs)} · ש ${r0(et.fat)}${e.time?' · '+e.time:''}</span></div>
         <div class="kc">${r0(et.kcal)}<small> קל׳</small></div></div>`;
@@ -455,6 +508,7 @@ $('#meals').addEventListener('click',e=>{
   const it=e.target.closest('.it');if(it)openReview(JSON.parse(JSON.stringify(DB[day][+it.dataset.i])),+it.dataset.i)});
 $('#bToday').onclick=()=>{document.querySelectorAll('.sheet.on').forEach(s=>close('#'+s.id));day=dk(new Date());render();scrollTo({top:0,behavior:'smooth'})};
 $('#bAv').onclick=()=>openSet();
+document.querySelectorAll('[data-ic]').forEach(el=>{const c=el.closest('.cam'),x=el.classList.contains('shx');el.innerHTML=ic(el.dataset.ic,c?28:x?17:24,c?2:x?2.2:1.8)});
 
 /* ---------- sheets ---------- */
 function open(id){$(id).classList.add('on')}
@@ -571,10 +625,10 @@ async function testConn(out){
   }
   line(ok>0,ok?'יש מודל שעובד — האפליקציה תשתמש בו.':'כל המודלים עמוסים או חסומים כרגע. נסה שוב בעוד כמה דקות.');
 }
-const ERR={nokey:'עוד לא הוכנס מפתח. פתח ⚙️ הגדרות.',key:'המפתח לא תקין. בדוק אותו ב-⚙️ הגדרות.',
+const ERR={nokey:'עוד לא הוכנס מפתח. פתח את ההגדרות.',key:'המפתח לא תקין. בדוק אותו בהגדרות.',
   quota:'נגמרה המכסה החינמית של גוגל כרגע. נסה שוב בעוד דקה, או מחר. בינתיים אפשר להוסיף ידנית.',
   net:'הטלפון לא מצליח להגיע לשרת של גוגל. אם יש לך אינטרנט מסונן, VPN או חוסם פרסומות — הם כנראה חוסמים את generativelanguage.googleapis.com. נסה גם בסלולרי במקום וויי-פיי.',
-  timeout:'גוגל לא ענו בזמן (כנראה עומס). נסה שוב, או בדוק חיבור ב-⚙️ הגדרות.',
+  timeout:'גוגל לא ענו בזמן (כנראה עומס). נסה שוב, או בדוק חיבור בהגדרות.',
   geo:'גוגל לא מאפשרים את השירות מהמיקום הזה.',
   srv:'השרתים של גוגל עמוסים כרגע. נסה שוב בעוד רגע.',parse:'לא הצלחתי להבין את התשובה. נסה שוב.'};
 
@@ -866,9 +920,9 @@ function prepImg(file){return new Promise((ok,bad)=>{const u=URL.createObjectURL
     x.putImageData(d,0,0);URL.revokeObjectURL(u);c.toBlob(b=>ok(b),'image/png')};
   im.onerror=()=>{URL.revokeObjectURL(u);bad(new Error('img'))};im.src=u})}
 function openRead(){
-  $('#addPn').innerHTML=`<h2>📄 קריאת ערכים מצילום מסך</h2>
+  $('#addPn').innerHTML=`<h2>קריאת ערכים מצילום מסך</h2>
     <p class="note">צלם מסך של תשובה מ-Gemini / ChatGPT, או של טבלת ערכים תזונתיים על מוצר. הקריאה נעשית <b>בטלפון, בלי AI</b>.</p>
-    <button class="btn" id="rdPick" style="width:100%;margin-top:6px">🖼️ בחר צילום מסך</button>
+    <button class="btn" id="rdPick" style="width:100%;margin-top:6px">${ic('scan',19)} בחר צילום מסך</button>
     <input type="file" id="rdFile" accept="image/*" hidden>
     <div class="note" id="rdProg"></div>
     <label class="f">או הדבק כאן את הטקסט (למשל "העתק" מהתשובה)<textarea class="i" id="rdTxt" style="min-height:120px"></textarea></label>
@@ -936,8 +990,8 @@ function drawAdd(q){
   for(const d of Object.keys(DB).sort().reverse()){for(const e of DB[d].slice().reverse()){const k=e.items.map(x=>x.name).join(', ');
     if(!seen.has(k)){seen.add(k);prev.push(e)}if(prev.length>=5)break}if(prev.length>=5)break}
   $('#addPn').innerHTML=`<h2>הוספה ל${m}</h2>
-    <div class="chips" id="aMeal">${MEALS.map(x=>`<button data-m="${x}" class="${x===m?'on':''}">${MEMO[x]} ${x}</button>`).join('')}</div>
-    <div class="srch"><input class="i" id="aQ" placeholder="חפש מאכל… (תפוח, קוטג׳, שניצל)" value="${esc(q)}" autocomplete="off" enterkeyhint="search"></div>
+    <div class="chips" id="aMeal">${MEALS.map(x=>`<button data-m="${x}" class="${x===m?'on':''}">${ic(MIC[x][0],16)} ${x}</button>`).join('')}</div>
+    <div class="srch"><i>${ic('search',19)}</i><input class="i" id="aQ" placeholder="חפש מאכל… (תפוח, קוטג׳, שניצל)" value="${esc(q)}" autocomplete="off" enterkeyhint="search"></div>
     <div id="aRes"></div>
     <div class="bask" id="aBask" style="display:none"></div>`;
   $('#aMeal').onclick=ev=>{const b=ev.target.closest('button');if(!b)return;addMeal=b.dataset.m;
@@ -949,18 +1003,18 @@ function drawAdd(q){
 function drawRes(q,fav,prev){
   const el=$('#aRes');q=q.trim();
   const row=(f,i,tag)=>`<div class="fr" data-f="${i}"><div class="nm"><b>${esc(f.names[0])}${f.my?'<span class="star">שלי</span>':''}</b>
-    <span>מנה ${f.unit} ג׳ · ${r0(f.kcal*f.unit/100)} קל׳</span></div><button class="add" data-plus="${i}" aria-label="הוסף">+</button></div><div data-q="${i}"></div>`;
+    <span>מנה ${f.unit} ג׳ · ${r0(f.kcal*f.unit/100)} קל׳</span></div><button class="add" data-plus="${i}" aria-label="הוסף">${ic('plus',18,2.4)}</button></div><div data-q="${i}"></div>`;
   let list=[];
   if(!q){
     list=fav.map(o=>({names:[o.name],kcal:o.kcal,protein:o.protein,carbs:o.carbs,fat:o.fat,unit:o.unit,my:1}));
     el.innerHTML=`<div class="tiles">
-      <button class="tile" id="tCam"><i>📷</i><b>צלם את הצלחת</b><span>AI מזהה ומחשב</span></button>
-      <button class="tile" id="tRead"><i>🖼️</i><b>מצילום מסך</b><span>קורא ערכים בלי AI</span></button>
-      <button class="tile" id="tDesc"><i>💬</i><b>תאר ארוחה</b><span>"2 ביצים ופרוסת לחם"</span></button>
-      <button class="tile" id="tMan"><i>✍️</i><b>הזנה ידנית</b><span>אתה כותב את הערכים</span></button></div>
-      ${list.length?`<h3 class="sub">⭐ הקבועים שלך</h3>${list.map((f,i)=>row(f,i)).join('')}`:''}
-      ${prev.length?`<h3 class="sub">🔁 שוב את אותה ארוחה</h3>${prev.map((e,i)=>{const t=totals([e]);return `<div class="fr" data-p="${i}"><div class="nm"><b>${esc(e.items.map(x=>x.name).join(', '))}</b>
-        <span>${e.meal} · ${r0(t.kcal)} קל׳</span></div><button class="add" data-pp="${i}" aria-label="הוסף">+</button></div>`}).join('')}`:''}`;
+      <button class="tile" id="tCam"><i style="--tb:#dcfae6;--tf:#079455">${ic('camera')}</i><b>צלם את הצלחת</b><span>AI מזהה ומחשב</span></button>
+      <button class="tile" id="tRead"><i style="--tb:#e0f2fe;--tf:#0086c9">${ic('scan')}</i><b>מצילום מסך</b><span>קורא ערכים בלי AI</span></button>
+      <button class="tile" id="tDesc"><i style="--tb:#f4ebff;--tf:#7f56d9">${ic('chat')}</i><b>תאר ארוחה</b><span>"2 ביצים ופרוסת לחם"</span></button>
+      <button class="tile" id="tMan"><i style="--tb:#fef0c7;--tf:#dc6803">${ic('pencil')}</i><b>הזנה ידנית</b><span>אתה כותב את הערכים</span></button></div>
+      ${list.length?`<h3 class="sub">${ic('star',16)} הקבועים שלך</h3>${list.map((f,i)=>row(f,i)).join('')}`:''}
+      ${prev.length?`<h3 class="sub">${ic('repeat',16)} שוב את אותה ארוחה</h3>${prev.map((e,i)=>{const t=totals([e]);return `<div class="fr" data-p="${i}"><div class="nm"><b>${esc(e.items.map(x=>x.name).join(', '))}</b>
+        <span>${e.meal} · ${r0(t.kcal)} קל׳</span></div><button class="add" data-pp="${i}" aria-label="הוסף">${ic('plus',18,2.4)}</button></div>`}).join('')}`:''}`;
     $('#tCam').onclick=pickPhoto;$('#tRead').onclick=openRead;
     $('#tDesc').onclick=()=>openDesc();
     $('#tMan').onclick=()=>openReview({meal:mealNow(),items:[...BASK,{name:'',grams:100,kcal:0,protein:0,carbs:0,fat:0}]},-1);
@@ -970,8 +1024,8 @@ function drawRes(q,fav,prev){
     list=foodHits(q);
     const exact=list.some(f=>f.names.some(n=>n===keyOf(q)));
     el.innerHTML=(list.length?list.map((f,i)=>row(f,i)).join(''):'<div class="note" style="padding:12px 2px">לא נמצא במאגר.</div>')+
-      (exact?'':`<div class="fr" id="aAI"><div class="nm"><b class="ai">✨ חשב "${esc(q)}" עם AI</b><span>גוגל מעריך, ונשמר במאגר שלך לפעם הבאה</span></div></div>
-      <div class="fr" id="aMan"><div class="nm"><b>✍️ הזן "${esc(q)}" ידנית</b><span>אתה כותב את הערכים</span></div></div>`);
+      (exact?'':`<div class="fr" id="aAI"><div class="nm"><b class="ai">${ic('sparkle',17)} חשב "${esc(q)}" עם AI</b><span>גוגל מעריך, ונשמר במאגר שלך לפעם הבאה</span></div></div>
+      <div class="fr" id="aMan"><div class="nm"><b>${ic('pencil',17)} הזן "${esc(q)}" ידנית</b><span>אתה כותב את הערכים</span></div></div>`);
     if($('#aAI'))$('#aAI').onclick=()=>aiText(q);
     if($('#aMan'))$('#aMan').onclick=()=>openReview({meal:mealNow(),items:[...BASK,{name:q,grams:100,kcal:0,protein:0,carbs:0,fat:0}]},-1);
   }
@@ -1007,7 +1061,7 @@ function aiText(t){
   run({text:t,local:lc,keep:BASK.slice()});
 }
 function openDesc(){
-  $('#addPn').innerHTML=`<h2>💬 תאר מה אכלת</h2>
+  $('#addPn').innerHTML=`<h2>תאר מה אכלת</h2>
     <label class="f">במשפט אחד, עם כמויות אם אפשר<textarea class="i" id="desc" placeholder="למשל: 2 פרוסות לחם מלא עם חומוס ומלפפון"></textarea></label>
     <p class="note">מאכלים שבמאגר מחושבים מיד, בלי אינטרנט. רק מה שלא מוכר נשלח ל-AI.</p>
     <div class="row" style="margin-top:12px"><button class="btn sec" id="dBack">חזרה</button><button class="btn" id="dGo">✨ חשב</button></div>`;
@@ -1027,7 +1081,7 @@ async function run({img,thumb,text,local,keep}){
     if(closedAt>t0)return;
     busy=false;
     if(o.notFood||!o.items?.length){
-      $('#addPn').innerHTML=`<h2>לא זיהיתי אוכל 🤔</h2>${img?`<img class="prev" src="${img}" alt="">`:''}
+      $('#addPn').innerHTML=`<h2>לא זיהיתי אוכל</h2>${img?`<img class="prev" src="${img}" alt="">`:''}
         <div class="row" style="margin-top:14px"><button class="btn sec" id="nC">ביטול</button><button class="btn" id="nM">הוסף ידנית</button></div>`;
       $('#nC').onclick=()=>close('#shAdd');
       $('#nM').onclick=()=>openReview({meal:mealNow(),img:thumb,items:[{name:text||'',grams:100,kcal:0,protein:0,carbs:0,fat:0}]},-1);
@@ -1045,7 +1099,7 @@ async function run({img,thumb,text,local,keep}){
       toast('גוגל עמוסים — חישבתי מה שאני מכיר. השלם את השאר.');return}
     $('#addPn').innerHTML=`<h2>אופס</h2><div class="err">${ERR[e.code]||ERR.srv}</div>${DIAG.last?`<div class="note" dir="ltr" style="text-align:left">${esc(DIAG.last)}</div>`:''}
       <div class="row" style="margin-top:14px"><button class="btn sec" id="eC">סגור</button>
-      ${e.code==='nokey'||e.code==='key'?'<button class="btn" id="eS">⚙️ הגדרות</button>':'<button class="btn" id="eR">נסה שוב</button>'}</div>
+      ${e.code==='nokey'||e.code==='key'?'<button class="btn" id="eS">הגדרות</button>':'<button class="btn" id="eR">נסה שוב</button>'}</div>
       <button class="btn sec" id="eM" style="width:100%;margin-top:8px">הוסף ידנית</button>`;
     $('#eC').onclick=()=>close('#shAdd');
     if($('#eS'))$('#eS').onclick=()=>{close('#shAdd');openSet()};
@@ -1063,7 +1117,7 @@ function openReview(entry,idx){
 function drawReview(){
   const e=cur;
   let h=`<h2>${curIdx<0?'בדוק ושמור':'עריכת ארוחה'}</h2>${e.img?`<img class="prev" src="${e.img}" alt="" style="max-height:140px">`:''}
-    <div class="chips" id="mc">${MEALS.map(m=>`<button data-m="${m}" class="${m===e.meal?'on':''}">${MEMO[m]} ${m}</button>`).join('')}</div>`;
+    <div class="chips" id="mc">${MEALS.map(m=>`<button data-m="${m}" class="${m===e.meal?'on':''}">${ic(MIC[m][0],16)} ${m}</button>`).join('')}</div>`;
   e.items.forEach((x,i)=>{
     h+=`<div class="ed" data-i="${i}"><div class="top"><input class="i" data-k="name" value="${esc(x.name)}" placeholder="שם המאכל" style="margin:0">
       <button class="x" data-del="${i}" aria-label="מחק">✕</button></div>
@@ -1137,28 +1191,28 @@ function openSet(){
   const g=S.goal;
   $('#setPn').innerHTML=`<h2>הגדרות</h2>
     <div class="grp">
-      <button class="li" id="sProf"><i>👤</i><div class="t">${esc(S.name||'הפרופיל שלי')}<span>${S.prof.age?`${S.prof.age} · ${S.prof.h} ס״מ · ${S.prof.w} ק״ג · `:''}יעד ${g.kcal} קל׳ — עדכון</span></div></button>
-      <button class="li" id="sFit"><i>⌚</i><div class="t">שעון ואפליקציית הבריאות<span>כמה שרפת וגירעון יומי</span></div></button>
-      <button class="li" id="sMy"><i>⭐</i><div class="t">המאגר שלי<span>${Object.keys(MY).length} מאכלים שנשמרו</span></div></button>
+      <button class="li" id="sProf"><i>${ic('user')}</i><div class="t">${esc(S.name||'הפרופיל שלי')}<span>${S.prof.age?`${S.prof.age} · ${S.prof.h} ס״מ · ${S.prof.w} ק״ג · `:''}יעד ${g.kcal} קל׳ — עדכון</span></div></button>
+      <button class="li" id="sFit"><i>${ic('watch')}</i><div class="t">שעון ואפליקציית הבריאות<span>כמה שרפת וגירעון יומי</span></div></button>
+      <button class="li" id="sMy"><i>${ic('star')}</i><div class="t">המאגר שלי<span>${Object.keys(MY).length} מאכלים שנשמרו</span></div></button>
     </div>
     <h3 class="sub">יעד יומי (אפשר לשנות ידנית)</h3>
     <div class="g4" style="background:var(--soft);padding:10px;border-radius:18px">${MAC.map(([k,n])=>`<div><label>${n}${k==='kcal'?'':' (ג׳)'}</label><input type="number" inputmode="numeric" id="g_${k}" value="${g[k]}"></div>`).join('')}</div>
-    <h3 class="sub">🤖 חיבור ל-AI (Gemini)</h3>
+    <h3 class="sub">${ic('sparkle',16)} חיבור ל-AI (Gemini)</h3>
     <input class="i" id="sKey" type="password" value="${esc(S.key)}" placeholder="הדבק כאן מפתח" autocomplete="off" spellcheck="false" dir="ltr">
     <div class="note">לא חובה — רוב המאכלים מחושבים בלי זה. צריך רק לצילום צלחת ולמאכלים חדשים.
       מפתח חינם: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> ← Create API key ← העתק לכאן.</div>
-    <button class="btn sec w" id="sTest" style="margin-top:8px">🔌 בדוק חיבור</button>
+    <button class="btn sec w" id="sTest" style="margin-top:8px">בדוק חיבור</button>
     <div class="note" id="sTestOut"></div>
     <button class="btn w" id="sOk" style="margin-top:14px">שמור</button>
     <h3 class="sub">עוד</h3>
     <div class="grp">
-      <button class="li" id="sShare"><i>📤</i><div class="t">שתף את האפליקציה<span>למשל לבן/בת הזוג — כל אחד מקבל יומן נפרד</span></div></button>
-      <button class="li" id="sCsv"><i>📄</i><div class="t">ייצוא טבלה (CSV)<span>נפתח באקסל</span></div></button>
-      <button class="li" id="sBak"><i>💾</i><div class="t">גיבוי<span>שמור קובץ עם כל הנתונים</span></div></button>
-      <button class="li" id="sRes"><i>📥</i><div class="t">שחזור מגיבוי</div></button>
+      <button class="li" id="sShare"><i>${ic('share')}</i><div class="t">שתף את האפליקציה<span>למשל לבן/בת הזוג — כל אחד מקבל יומן נפרד</span></div></button>
+      <button class="li" id="sCsv"><i>${ic('table')}</i><div class="t">ייצוא טבלה (CSV)<span>נפתח באקסל</span></div></button>
+      <button class="li" id="sBak"><i>${ic('save')}</i><div class="t">גיבוי<span>שמור קובץ עם כל הנתונים</span></div></button>
+      <button class="li" id="sRes"><i>${ic('restore')}</i><div class="t">שחזור מגיבוי</div></button>
     </div>
     <input type="file" id="resF" accept=".json,application/json" hidden>
-    <p class="note" style="text-align:center;margin-top:16px">גרסה 13</p>`;
+    <p class="note" style="text-align:center;margin-top:16px">גרסה 14</p>`;
   open('#shSet');
   $('#sProf').onclick=()=>{close('#shSet');openOnb(1)};
   $('#sTest').onclick=async()=>{const bt=$('#sTest');if(bt.disabled)return;bt.disabled=true;S.key=$('#sKey').value.trim();LS.set('kal-set',S);const o=$('#sTestOut');o.textContent='בודק…';await testConn(o);bt.disabled=false};
@@ -1196,25 +1250,25 @@ function drawOnb(st){
   const foot=(next,back,skip)=>`<div class="grow"></div>${skip?`<button class="btn sec w" id="oSkip" style="margin-top:8px">${skip}</button>`:''}
     <div class="row" style="margin-top:10px">${back?'<button class="btn sec" id="oBack">חזרה</button>':''}<button class="btn" id="oNext">${next}</button></div>`;
   let h='';
-  if(st===0)h=`<div class="hero2">🥗</div><h1>ברוכים הבאים</h1><p class="lead">צלם, כתוב או חפש מה אכלת — ונעקוב יחד אחרי הקלוריות, החלבון והגירעון היומי.</p>
+  if(st===0)h=`<div class="hero2" style="--hb:#dcfae6;--hf:#079455">${ic('bowl',46,1.6)}</div><h1>ברוכים הבאים</h1><p class="lead">צלם, כתוב או חפש מה אכלת — ונעקוב יחד אחרי הקלוריות, החלבון והגירעון היומי.</p>
     <label class="f">איך לקרוא לך?<input class="i" id="oName" value="${esc(OB.name)}" placeholder="השם שלך" autocomplete="given-name"></label>${foot('בואו נתחיל',0,S.onb?'סגור':'')}`;
-  if(st===1)h=`<div class="hero2">📏</div><h1>קצת עליך</h1><p class="lead">כדי לחשב כמה קלוריות הגוף שורף ביום.</p>
+  if(st===1)h=`<div class="hero2" style="--hb:#e0f2fe;--hf:#0086c9">${ic('ruler',46,1.6)}</div><h1>קצת עליך</h1><p class="lead">כדי לחשב כמה קלוריות הגוף שורף ביום.</p>
     <div class="sel" id="oSex"><button data-s="f" class="${OB.sex==='f'?'on':''}">אישה</button><button data-s="m" class="${OB.sex!=='f'?'on':''}">גבר</button></div>
     <div class="g4" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-top:12px">
       <div><label>גיל</label><input class="i" type="number" inputmode="numeric" id="oA" value="${OB.age}"></div>
       <div><label>גובה (ס״מ)</label><input class="i" type="number" inputmode="numeric" id="oH" value="${OB.h}"></div>
       <div><label>משקל (ק״ג)</label><input class="i" type="number" inputmode="decimal" id="oW" value="${OB.w}"></div></div>
     <div class="err" id="oErr" style="display:none">מלא גיל, גובה ומשקל</div>${foot('המשך',1)}`;
-  if(st===2)h=`<div class="hero2">🏃</div><h1>כמה אתה זז?</h1><p class="lead">ביום רגיל, כולל אימונים.</p>
+  if(st===2)h=`<div class="hero2" style="--hb:#fef0c7;--hf:#dc6803">${ic('run',46,1.6)}</div><h1>כמה אתה זז?</h1><p class="lead">ביום רגיל, כולל אימונים.</p>
     <div class="opt" id="oAct">${ACT.map(a=>`<button data-v="${a[0]}" class="${a[0]==OB.act?'on':''}"><div><b>${a[1]}</b><span>${a[2]}</span></div></button>`).join('')}</div>
     <h3 class="sub">המטרה שלך</h3>
     <div class="opt" id="oGoal">${GOALS.map(gl=>`<button data-v="${gl[0]}" class="${gl[0]===OB.goal?'on':''}"><div><b>${gl[1]}</b>${gl[2]?`<span>${gl[2]}</span>`:''}</div></button>`).join('')}</div>${foot('חשב לי יעד',1)}`;
   if(st===3){const c=calcGoal(OB);OB.calc=c;
-    h=`<div class="hero2">🎯</div><h1>היעד היומי שלך</h1><p class="lead">הגוף שלך שורף בערך ${c.tdee.toLocaleString()} קל׳ ביום.</p>
+    h=`<div class="hero2" style="--hb:#fee4e2;--hf:#d92d20">${ic('target',46,1.6)}</div><h1>היעד היומי שלך</h1><p class="lead">הגוף שלך שורף בערך ${c.tdee.toLocaleString()} קל׳ ביום.</p>
     <div class="goalbox"><div class="big2">${c.kcal.toLocaleString()}</div><div class="mut">קלוריות ביום</div>
       <div class="macros" style="margin-top:14px">${[['חלבון',c.protein,'var(--pr)'],['פחמימות',c.carbs,'var(--cb)'],['שומן',c.fat,'var(--ft)']].map(([n,v,col])=>`<div class="mac"><div class="n">${n}</div><div class="tr"><div class="fi" style="width:100%;background:${col}"></div></div><div class="v">${v} ג׳</div></div>`).join('')}</div></div>
     <p class="note" style="text-align:center">אפשר לשנות בכל רגע בהגדרות. זו הערכה לפי נוסחה מקובלת (Mifflin-St Jeor), לא ייעוץ רפואי.</p>${foot('מעולה, המשך',1)}`}
-  if(st===4)h=`<div class="hero2">🤖</div><h1>צילום עם AI</h1><p class="lead">לא חובה. רוב המאכלים מחושבים בטלפון. AI צריך רק כדי לזהות צלחת מתמונה ומאכלים חדשים.</p>
+  if(st===4)h=`<div class="hero2" style="--hb:#f4ebff;--hf:#7f56d9">${ic('sparkle',46,1.6)}</div><h1>צילום עם AI</h1><p class="lead">לא חובה. רוב המאכלים מחושבים בטלפון. AI צריך רק כדי לזהות צלחת מתמונה ומאכלים חדשים.</p>
     <ol class="sc"><li>היכנס ל-<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a></li><li>לחץ <b>Create API key</b> והעתק</li><li>הדבק כאן:</li></ol>
     <input class="i" id="oKey" type="password" value="${esc(OB.key)}" placeholder="מפתח Gemini (חינם)" autocomplete="off" spellcheck="false" dir="ltr">${foot('סיום ✓',1,'דלג — אוסיף אחר כך')}`;
   $('#onbPn').innerHTML=`<div class="onb">${dots}${h}</div>`;
@@ -1266,7 +1320,7 @@ $('#bHist').onclick=()=>{
   const last7=tt.slice(-7).filter(t=>t.kcal>0);const avg=k=>last7.length?r0(last7.reduce((s,t)=>s+t[k],0)/last7.length):0;
   const dfOf=(d,t)=>{const b=burnOf(d);return b&&!b.noRest&&t.kcal>0?b.tot-t.kcal:null};
   const w7=days.slice(-7).map((d,i)=>dfOf(d,tt[7+i])).filter(x=>x!=null),wSum=w7.reduce((s,x)=>s+x,0);
-  $('#histPn').innerHTML=`<h2>📊 14 ימים אחרונים</h2>
+  $('#histPn').innerHTML=`<h2>14 ימים אחרונים</h2>
     <div class="wk">${days.map((d,i)=>`<div><i class="${tt[i].kcal>g.kcal?'ov':''}" style="height:${tt[i].kcal/mx*100}%"></i>${+d.slice(8)}</div>`).join('')}</div>
     <p class="mut">ממוצע ב-7 הימים האחרונים (ימים עם רישום): <b>${avg('kcal')}</b> קל׳ · ח ${avg('protein')} · פ ${avg('carbs')} · ש ${avg('fat')}</p>
     ${w7.length?`<div class="sum" style="background:${wSum>=0?'var(--acc2)':'rgba(220,38,38,.1)'};color:${wSum>=0?'var(--acc)':'var(--warn)'}">
@@ -1277,7 +1331,7 @@ $('#bHist').onclick=()=>{
       <td style="color:${df==null?'':df>=0?'var(--acc)':'var(--warn)'}">${df==null?'–':(df<0?'+':'')+r0(Math.abs(df))}</td>
       <td class="mut">${r0(t.protein)}/${r0(t.carbs)}/${r0(t.fat)}</td></tr>`:''}).join('')}</table>
     <p class="note">גירעון ירוק = אכלת פחות ממה ששרפת. +אדום = עודף. בערך 7,700 קל׳ = ק״ג אחד. זו הערכה.</p>
-    <div class="row" style="margin-top:14px"><button class="btn sec" id="hCsv">📄 ייצא טבלה</button><button class="btn" id="hC">סגור</button></div>`;
+    <div class="row" style="margin-top:14px"><button class="btn sec" id="hCsv">ייצא טבלה</button><button class="btn" id="hC">סגור</button></div>`;
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.id==='bHist'));
   open('#shHist');
   $('#histPn').querySelectorAll('tr[data-d]').forEach(tr=>tr.onclick=()=>{day=tr.dataset.d;close('#shHist');render()});
@@ -1289,7 +1343,7 @@ $('#bHist').onclick=()=>{
 document.addEventListener('touchmove',e=>{if(e.touches.length>1||(e.scale&&e.scale!==1))e.preventDefault()},{passive:false});
 let lastTouch=0;
 document.addEventListener('touchend',e=>{const n=Date.now();
-  if(n-lastTouch<350&&!e.target.closest('input,textarea,select')){e.preventDefault();e.target.click&&e.target.closest('button,a,.it,tr,[data-d]')&&e.target.click()}
+  if(n-lastTouch<350&&!e.target.closest('input,textarea,select')){e.preventDefault();const t=e.target.closest('button,a,label,.it,.fr,tr,[data-d]');if(t)t.click()}   // svg icons have no .click()
   lastTouch=n},{passive:false});
 document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
 
