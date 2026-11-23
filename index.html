@@ -397,14 +397,15 @@ async function analyze({img,text}){
   const parts=[];
   if(img)parts.push({inline_data:{mime_type:'image/jpeg',data:img.split(',')[1]}});
   parts.push({text:PROMPT.replace('{SRC}',img?'שרואים בתמונה':'בתיאור הבא')+(text?`\n${img?'הערה מהמשתמש':'התיאור'}: ${text}`:'')});
-  const list=await models(key);let last='',tries=0;const log=[];
-  for(const m of list.slice(0,8)){
+  let list=await models(key);let last='',tries=0;const log=[];
+  const good=LS.get('kal-good','');if(good&&list.includes(good))list=[good,...list.filter(x=>x!==good)];
+  for(const m of list.slice(0,10)){
     let r;
     try{r=await gen(key,m,parts,SCHEMA,60000)}
     catch(e){if(e.code==='timeout'&&++tries<2){last='timeout';continue}throw e}
     if(r.ok){const j=await r.json();
       const t=(j.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('');
-      try{const o=JSON.parse(t);o.model=m;return o}catch(e){last='parse';DIAG.last=m+': bad JSON';continue}}
+      try{const o=JSON.parse(t);o.model=m;LS.set('kal-good',m);return o}catch(e){last='parse';DIAG.last=m+': bad JSON';continue}}
     const st=r.status;let msg='';try{msg=(await r.json()).error?.message||''}catch(e){}
     log.push(`${m}: ${st}`);DIAG.last=log.join(' · ')+' — '+msg.slice(0,90);
     if(st===404)continue;                   // model name not offered to this key
@@ -424,11 +425,15 @@ async function testConn(out){
   let t0=Date.now(),list;
   try{list=await models(key,true);line(1,`גוגל עונה (${((Date.now()-t0)/1000).toFixed(1)} שנ׳) · ${list.length} מודלים`)}
   catch(e){line(0,(ERR[e.code]||'שגיאה')+' — '+(DIAG.last||''));return}
-  t0=Date.now();
-  try{const r=await gen(key,list[0],[{text:'Reply with the word OK'}],null,30000);
-    if(r.ok)line(1,`${list[0]} עונה (${((Date.now()-t0)/1000).toFixed(1)} שנ׳). הכול תקין!`);
-    else{let m='';try{m=(await r.json()).error?.message||''}catch(e){}line(0,`${list[0]}: HTTP ${r.status} ${m.slice(0,150)}`)}}
-  catch(e){line(0,(ERR[e.code]||'שגיאה')+' — '+(DIAG.last||''))}
+  let ok=0;
+  for(const m of list.slice(0,10)){
+    t0=Date.now();
+    try{const r=await gen(key,m,[{text:'Reply with the word OK'}],null,25000);
+      if(r.ok){line(1,`${m} עובד (${((Date.now()-t0)/1000).toFixed(1)} שנ׳)`);if(!ok)LS.set('kal-good',m);ok++;if(ok>=2)break}
+      else line(0,`${m}: ${r.status}${r.status===503?' עמוס':r.status===429?' מכסה':r.status===404?' לא זמין':''}`)}
+    catch(e){line(0,`${m}: ${e.code}`)}
+  }
+  line(ok>0,ok?'יש מודל שעובד — האפליקציה תשתמש בו.':'כל המודלים עמוסים או חסומים כרגע. נסה שוב בעוד כמה דקות.');
 }
 const ERR={nokey:'עוד לא הוכנס מפתח. פתח ⚙️ הגדרות.',key:'המפתח לא תקין. בדוק אותו ב-⚙️ הגדרות.',
   quota:'נגמרה המכסה החינמית של גוגל כרגע. נסה שוב בעוד דקה, או מחר. בינתיים אפשר להוסיף ידנית.',
@@ -563,7 +568,7 @@ $('#bSet').onclick=openSet;
 function openSet(){
   const g=S.goal;
   $('#setPn').innerHTML=`<h2>הגדרות</h2>
-    <label class="f">מפתח Gemini (חינם)<input class="i" id="sKey" value="${esc(S.key)}" placeholder="AIza..." autocomplete="off" spellcheck="false" dir="ltr"></label>
+    <label class="f">מפתח Gemini (חינם)<input class="i" id="sKey" type="password" value="${esc(S.key)}" placeholder="AIza..." autocomplete="off" spellcheck="false" dir="ltr"></label>
     <div class="note">איך משיגים מפתח חינם (פעם אחת, 2 דקות):
       <ol class="steps"><li>היכנס ל-<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> עם חשבון גוגל</li>
       <li>לחץ <b>Create API key</b></li><li>העתק והדבק כאן</li></ol>
@@ -585,11 +590,11 @@ function openSet(){
     <div class="row"><button class="btn sec" id="sCsv">📄 טבלה (CSV)</button><button class="btn sec" id="sBak">💾 גיבוי</button></div>
     <button class="btn sec" id="sRes" style="width:100%;margin-top:8px">📥 שחזר מגיבוי</button>
     <input type="file" id="resF" accept=".json,application/json" hidden>
-    <p class="note" style="text-align:center;margin-top:16px">גרסה 7</p>`;
+    <p class="note" style="text-align:center;margin-top:16px">גרסה 8</p>`;
   open('#shSet');
   $('#sC').onclick=()=>close('#shSet');
   $('#sSex').onclick=ev=>{const b=ev.target.closest('button');if(!b)return;$('#sSex').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z===b))};
-  $('#sTest').onclick=async()=>{S.key=$('#sKey').value.trim();LS.set('kal-set',S);const o=$('#sTestOut');o.textContent='בודק…';await testConn(o)};
+  $('#sTest').onclick=async()=>{const bt=$('#sTest');if(bt.disabled)return;bt.disabled=true;S.key=$('#sKey').value.trim();LS.set('kal-set',S);const o=$('#sTestOut');o.textContent='בודק…';await testConn(o);bt.disabled=false};
   $('#sFit').onclick=()=>{close('#shSet');openHelp()};
   $('#sOk').onclick=()=>{S.key=$('#sKey').value.trim();for(const [k] of MAC){const v=parseFloat($('#g_'+k).value);if(v>0)S.goal[k]=v}
     S.prof={sex:$('#sSex .on').dataset.s,age:+$('#pA').value||0,h:+$('#pH').value||0,w:num($('#pW').value)||0};
