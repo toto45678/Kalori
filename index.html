@@ -351,48 +351,87 @@ const SCHEMA={type:'OBJECT',properties:{items:{type:'ARRAY',items:{type:'OBJECT'
 const PROMPT=`אתה תזונאי מומחה. זהה כל מאכל ומשקה ${'{SRC}'} והערך לכל אחד: שם קצר בעברית, משקל המנה בגרמים כפי שהיא נראית, קלוריות, חלבון, פחמימות ושומן בגרמים (לכל המנה, לא ל-100 גרם).
 הערך גודל מנה לפי כלים, ידיים וחפצים בתמונה. כלול שמן, רטבים וממרחים אם נראים. אל תמציא מאכלים שלא רואים.
 אם אין אוכל כלל — החזר items ריק ו-notFood=true.`;
-async function models(key){
+// fetch with a time limit: a phone that can't reach Google should fail fast, not after minutes
+const DIAG={};
+async function fetchT(url,opts,ms,step){
+  const ac=new AbortController(),t0=Date.now(),tm=setTimeout(()=>ac.abort(),ms);
+  try{return await fetch(url,{...opts,signal:ac.signal})}
+  catch(e){const to=ac.signal.aborted;DIAG.last=`${step}: ${to?'timeout':(e.name+': '+e.message)} · ${((Date.now()-t0)/1000).toFixed(1)}s`;
+    throw Object.assign(new Error(to?'timeout':'net'),{code:to?'timeout':'net'})}
+  finally{clearTimeout(tm)}
+}
+async function models(key,fresh){
   const c=LS.get('kal-models',null);
-  if(c&&c.k===key.slice(-6)&&Date.now()-c.t<864e5&&c.list.length)return c.list;
+  if(!fresh&&c&&c.k===key.slice(-6)&&Date.now()-c.t<864e5&&c.list.length)return c.list;
+  const r=await fetchT(API+'models?pageSize=200&key='+encodeURIComponent(key),{},20000,'models');
+  if(r.status===400||r.status===403){DIAG.last='models: HTTP '+r.status;throw Object.assign(new Error('key'),{code:'key'})}
   let list=[];
   try{
-    const r=await fetch(API+'models?pageSize=200&key='+encodeURIComponent(key));
-    if(r.status===400||r.status===403)throw Object.assign(new Error('key'),{code:'key'});
     const j=await r.json();
     const ver=n=>{const m=n.match(/gemini-(\d+(?:\.\d+)?)/);return m?+m[1]:0};
     list=(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent'))
       .map(m=>m.name.replace('models/','')).filter(n=>/^gemini-[\d.]+-flash/.test(n)&&!/image|tts|live|audio|thinking|exp|embed|native/.test(n))
       .sort((a,b)=>{const lite=n=>/lite/.test(n)?1:0,pre=n=>/preview/.test(n)?1:0;
         return lite(a)-lite(b)||ver(b)-ver(a)||pre(a)-pre(b)||a.length-b.length});
-  }catch(e){if(e.code==='key')throw e}
+  }catch(e){}
   if(!list.length)list=['gemini-flash-latest','gemini-flash-lite-latest','gemini-2.5-flash','gemini-2.5-flash-lite'];
   LS.set('kal-models',{k:key.slice(-6),t:Date.now(),list});
   return list;
 }
+async function gen(key,m,parts,schema,ms){
+  const cfg={temperature:.2};
+  if(schema){cfg.responseMimeType='application/json';cfg.responseSchema=schema}
+  const url=API+'models/'+m+':generateContent?key='+encodeURIComponent(key);
+  const send=c=>fetchT(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts}],generationConfig:c})},ms,m);
+  // no "thinking" = much faster; models that don't accept the setting get it without
+  let r=await send({...cfg,thinkingConfig:{thinkingBudget:0}});
+  if(r.status===400){let msg='';try{msg=(await r.clone().json()).error?.message||''}catch(e){}
+    if(/think/i.test(msg))r=await send(cfg)}
+  return r;
+}
 async function analyze({img,text}){
+  DIAG.last='';
   const key=(S.key||'').trim();if(!key)throw Object.assign(new Error('nokey'),{code:'nokey'});
   const parts=[];
   if(img)parts.push({inline_data:{mime_type:'image/jpeg',data:img.split(',')[1]}});
   parts.push({text:PROMPT.replace('{SRC}',img?'שרואים בתמונה':'בתיאור הבא')+(text?`\n${img?'הערה מהמשתמש':'התיאור'}: ${text}`:'')});
-  const body=JSON.stringify({contents:[{parts}],generationConfig:{temperature:.2,responseMimeType:'application/json',responseSchema:SCHEMA}});
-  const list=await models(key);let last='';
-  for(const m of list.slice(0,6)){
-    let r;try{r=await fetch(API+'models/'+m+':generateContent?key='+encodeURIComponent(key),{method:'POST',headers:{'Content-Type':'application/json'},body})}
-    catch(e){throw Object.assign(new Error('net'),{code:'net'})}
+  const list=await models(key);let last='',tries=0;
+  for(const m of list.slice(0,5)){
+    let r;
+    try{r=await gen(key,m,parts,SCHEMA,60000)}
+    catch(e){if(e.code==='timeout'&&++tries<2){last='timeout';continue}throw e}
     if(r.ok){const j=await r.json();
       const t=(j.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('');
-      try{const o=JSON.parse(t);o.model=m;return o}catch(e){last='parse';continue}}
+      try{const o=JSON.parse(t);o.model=m;return o}catch(e){last='parse';DIAG.last=m+': bad JSON';continue}}
     const st=r.status;let msg='';try{msg=(await r.json()).error?.message||''}catch(e){}
+    DIAG.last=`${m}: HTTP ${st} ${msg.slice(0,120)}`;
     if(st===400&&/API key|API_KEY/i.test(msg))throw Object.assign(new Error('key'),{code:'key'});
+    if(st===400&&/location|region|country/i.test(msg))throw Object.assign(new Error('geo'),{code:'geo'});
     if(st===403)throw Object.assign(new Error('key'),{code:'key'});
     last=st===429?'quota':'srv';           // quota / model gone → try the next free model
   }
   localStorage.removeItem('kal-models');
   throw Object.assign(new Error(last),{code:last});
 }
+// Settings → "check connection": shows exactly where it breaks
+async function testConn(out){
+  const key=(S.key||'').trim(),line=(ok,t)=>out.insertAdjacentHTML('beforeend',`<div>${ok?'✅':'❌'} ${esc(t)}</div>`);
+  out.innerHTML='';DIAG.last='';if(!key){line(0,'אין מפתח');return}
+  let t0=Date.now(),list;
+  try{list=await models(key,true);line(1,`גוגל עונה (${((Date.now()-t0)/1000).toFixed(1)} שנ׳) · ${list.length} מודלים`)}
+  catch(e){line(0,(ERR[e.code]||'שגיאה')+' — '+(DIAG.last||''));return}
+  t0=Date.now();
+  try{const r=await gen(key,list[0],[{text:'Reply with the word OK'}],null,30000);
+    if(r.ok)line(1,`${list[0]} עונה (${((Date.now()-t0)/1000).toFixed(1)} שנ׳). הכול תקין!`);
+    else{let m='';try{m=(await r.json()).error?.message||''}catch(e){}line(0,`${list[0]}: HTTP ${r.status} ${m.slice(0,150)}`)}}
+  catch(e){line(0,(ERR[e.code]||'שגיאה')+' — '+(DIAG.last||''))}
+}
 const ERR={nokey:'עוד לא הוכנס מפתח. פתח ⚙️ הגדרות.',key:'המפתח לא תקין. בדוק אותו ב-⚙️ הגדרות.',
   quota:'נגמרה המכסה החינמית של גוגל כרגע. נסה שוב בעוד דקה, או מחר. בינתיים אפשר להוסיף ידנית.',
-  net:'אין חיבור לאינטרנט.',srv:'גוגל לא ענו. נסה שוב.',parse:'לא הצלחתי להבין את התשובה. נסה שוב.'};
+  net:'הטלפון לא מצליח להגיע לשרת של גוגל. אם יש לך אינטרנט מסונן, VPN או חוסם פרסומות — הם כנראה חוסמים את generativelanguage.googleapis.com. נסה גם בסלולרי במקום וויי-פיי.',
+  timeout:'גוגל לא ענו בזמן. נסה שוב, או בדוק חיבור ב-⚙️ הגדרות.',
+  geo:'גוגל לא מאפשרים את השירות מהמיקום הזה.',
+  srv:'גוגל לא ענו. נסה שוב.',parse:'לא הצלחתי להבין את התשובה. נסה שוב.'};
 
 /* ---------- add flow ---------- */
 let busy=false,cur=null,curIdx=-1;
@@ -400,7 +439,7 @@ function mealNow(){const h=new Date().getHours();return h<11?'בוקר':h<16?'צ
 $('#bCam').onclick=()=>{$('#file').value='';$('#file').click()};
 $('#file').onchange=async e=>{
   const f=e.target.files[0];if(!f)return;
-  let img;try{img=await shrink(f,1024,.8)}catch(er){toast('לא הצלחתי לפתוח את התמונה');return}
+  let img;try{img=await shrink(f,800,.75)}catch(er){toast('לא הצלחתי לפתוח את התמונה');return}
   const thumb=await thumbOf(img);
   askHint(img,thumb);
 };
@@ -438,7 +477,7 @@ async function run({img,thumb,text}){
     openReview({meal:mealNow(),img:thumb,items},-1);
   }catch(e){
     busy=false;
-    $('#addPn').innerHTML=`<h2>אופס</h2><div class="err">${ERR[e.code]||ERR.srv}</div>
+    $('#addPn').innerHTML=`<h2>אופס</h2><div class="err">${ERR[e.code]||ERR.srv}</div>${DIAG.last?`<div class="note" dir="ltr" style="text-align:left">${esc(DIAG.last)}</div>`:''}
       <div class="row" style="margin-top:14px"><button class="btn sec" id="eC">סגור</button>
       ${e.code==='nokey'||e.code==='key'?'<button class="btn" id="eS">⚙️ הגדרות</button>':'<button class="btn" id="eR">נסה שוב</button>'}</div>
       <button class="btn sec" id="eM" style="width:100%;margin-top:8px">הוסף ידנית</button>`;
@@ -509,6 +548,8 @@ function openSet(){
       <ol class="steps"><li>היכנס ל-<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> עם חשבון גוגל</li>
       <li>לחץ <b>Create API key</b></li><li>העתק והדבק כאן</li></ol>
       לא צריך כרטיס אשראי. המפתח נשמר רק בטלפון הזה.</div>
+    <button class="btn sec" id="sTest" style="width:100%;margin-top:8px">🔌 בדוק חיבור לגוגל</button>
+    <div class="note" id="sTestOut"></div>
     <h2 style="margin-top:18px">יעד יומי</h2>
     <div class="g4">${MAC.map(([k,n])=>`<div><label>${n}${k==='kcal'?'':' (ג׳)'}</label><input type="number" inputmode="numeric" id="g_${k}" value="${g[k]}"></div>`).join('')}</div>
     <h2 style="margin-top:18px">פרופיל (לחישוב שריפה במנוחה)</h2>
@@ -527,6 +568,7 @@ function openSet(){
   open('#shSet');
   $('#sC').onclick=()=>close('#shSet');
   $('#sSex').onclick=ev=>{const b=ev.target.closest('button');if(!b)return;$('#sSex').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z===b))};
+  $('#sTest').onclick=async()=>{S.key=$('#sKey').value.trim();LS.set('kal-set',S);const o=$('#sTestOut');o.textContent='בודק…';await testConn(o)};
   $('#sFit').onclick=()=>{close('#shSet');openHelp()};
   $('#sOk').onclick=()=>{S.key=$('#sKey').value.trim();for(const [k] of MAC){const v=parseFloat($('#g_'+k).value);if(v>0)S.goal[k]=v}
     S.prof={sex:$('#sSex .on').dataset.s,age:+$('#pA').value||0,h:+$('#pH').value||0,w:num($('#pW').value)||0};
