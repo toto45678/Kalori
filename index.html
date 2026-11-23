@@ -359,7 +359,9 @@ function parseFit(txt){
   if(k>=0){const parts=txt.slice(k+6).split(';').filter((x,i)=>i>0||x.trim());const p=parts.length&&!parts[0].trim()?parts.slice(1):parts;
     act=sumNums(p[0]||'');rest=sumNums(p[1]||'')}
   else{const n=(txt.match(/\d[\d,]*(?:\.\d+)?/g)||[]).map(num).filter(x=>!isNaN(x));
-    if(n.length<1||n.length>2)return null;act=n[0];rest=n.length>1?n[1]:NaN}
+    if(!n.length)return null;
+    if(n.length>2||/kcal|cal|קל/i.test(txt)){act=n.reduce((a,x)=>a+x,0);rest=NaN}   // shortcut copied the Active Calories samples straight to the clipboard
+    else{act=n[0];rest=n.length>1?n[1]:NaN}}
   if(isNaN(act)&&isNaN(rest))return null;
   if((act||0)>6000||(rest||0)>6000)return null;   // not calories
   return {d,act:isNaN(act)?0:act,rest:isNaN(rest)?0:rest};
@@ -1222,7 +1224,7 @@ function openSet(){
       <button class="li" id="sRes"><i>${ic('restore')}</i><div class="t">שחזור מגיבוי</div></button>
     </div>
     <input type="file" id="resF" accept=".json,application/json" hidden>
-    <p class="note" style="text-align:center;margin-top:16px">גרסה 16</p>`;
+    <p class="note" style="text-align:center;margin-top:16px">גרסה 17</p>`;
   open('#shSet');
   $('#sProf').onclick=()=>{close('#shSet');openOnb(1)};
   $('#sTest').onclick=async()=>{const bt=$('#sTest');if(bt.disabled)return;bt.disabled=true;S.key=$('#sKey').value.trim();LS.set('kal-set',S);const o=$('#sTestOut');o.textContent='בודק…';await testConn(o);bt.disabled=false};
