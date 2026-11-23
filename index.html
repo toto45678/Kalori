@@ -312,6 +312,7 @@ function dayFrac(){const n=new Date();return (n.getHours()*60+n.getMinutes())/14
 // {rest,act,tot,restEst} or null when nothing is known about that day
 function burnOf(d){
   const f=FIT[d],today=d===dk(new Date()),b=bmr();
+  if(f&&f.tot>0)return {rest:0,act:f.tot,tot:f.tot,restEst:false,noRest:false,t:f.t,total:1};   // the watch's total (active + resting): no estimate on top
   let rest=f&&f.rest>0?f.rest:null,act=f?(+f.act||0):0,restEst=false;
   if(rest==null&&b){rest=today?b*dayFrac():b;restEst=true}
   if(rest==null&&!f)return null;
@@ -323,7 +324,7 @@ function renderBurn(t){
     const df=bu.tot-t.kcal;
     el.innerHTML=`<div class="card burnC"><div class="ic ${df>=0?'fl':'wr'}">${ic(df>=0?'flame':'warn',24)}</div>
       <div class="tx"><span class="mut">${df>=0?'גירעון':'עודף'}${today?' עד עכשיו':''}</span><b class="${df>=0?'ok':'bad'}">${r0(Math.abs(df)).toLocaleString()} קל׳</b>
-      <span class="mut">שרפת ${r0(bu.tot).toLocaleString()}${bu.restEst?' (מנוחה בחישוב)':''}${bu.t?' · עודכן '+bu.t:''}</span></div>
+      <span class="mut">שרפת ${r0(bu.tot).toLocaleString()}${bu.total?' (סה״כ מהשעון)':bu.restEst?' (מנוחה בחישוב)':''}${bu.t?' · עודכן '+bu.t:''}</span></div>
       <div class="bt">${today?`<button class="pill g" id="bSync">${ic('watch',17)} סנכרן</button>`:''}<button class="pill ib2" id="bFitMan" aria-label="הזן ידנית">${ic('pencil',17)}</button></div></div>`;
   }else{
     el.innerHTML=`<div class="card burnC"><div class="ic wt">${ic('watch',24)}</div>
@@ -367,33 +368,40 @@ function parseFit(txt){
   if((act||0)>6000||(rest||0)>6000)return null;   // not calories
   return {d,act:isNaN(act)?0:act,rest:isNaN(rest)?0:rest};
 }
-function putFit(d,act,rest){FIT[d]={act:r0(act),rest:r0(rest),t:new Date().toTimeString().slice(0,5)};LS.set('kal-fit',FIT)}
+function putFit(d,act,rest,tot){FIT[d]={act:r0(act),rest:r0(rest),t:new Date().toTimeString().slice(0,5)};if(tot>0)FIT[d]={tot:r0(tot),t:FIT[d].t};LS.set('kal-fit',FIT)}
 function openFitSheet(fromShortcut){
-  const f=FIT[day]||{};
-  $('#addPn').innerHTML=`<h2>⌚ קלוריות שנשרפו</h2>
+  const f=FIT[day]||{},mode=()=>S.fitMode||'tot';
+  $('#addPn').innerHTML=`<h2>קלוריות שנשרפו</h2>
+    <div class="note">המספר מהשעון הוא:</div>
+    <div class="sel" id="fMode"><button data-v="tot">סה״כ (פעילות + מנוחה)</button><button data-v="act">פעילות בלבד</button></div>
     ${fromShortcut?`<p class="note">קיצור הדרך העתיק את הנתונים. לחץ על הכפתור ואז על "הדבק" שקופץ.</p>
       <button class="btn" id="fPaste" style="width:100%;font-size:1.1rem;padding:16px">הדבק נתונים</button>`:''}<div id="fDiag"></div>
     <div class="g2" style="margin-top:12px">
-      <label class="f" style="margin:0">פעילות (אנרגיה פעילה)<input class="i" type="number" inputmode="numeric" id="fAct" value="${f.act??''}"></label>
-      <label class="f" style="margin:0">מנוחה (ריק = חישוב)<input class="i" type="number" inputmode="numeric" id="fRest" value="${f.rest||''}"></label>
+      <label class="f" style="margin:0"><span id="fActL">פעילות</span><input class="i" type="number" inputmode="numeric" id="fAct" value="${f.tot||f.act||''}"></label>
+      <label class="f" style="margin:0" id="fRestW">מנוחה (ריק = חישוב לפי הפרופיל)<input class="i" type="number" inputmode="numeric" id="fRest" value="${f.rest||''}"></label>
     </div>
     <label class="f">או הדבק כאן את הטקסט מקיצור הדרך<input class="i" id="fTxt" placeholder="KALFIT;…" dir="ltr"></label>
     <div class="row" style="margin-top:14px"><button class="btn sec" id="fC">ביטול</button><button class="btn" id="fOk">שמור</button></div>
     ${day===dk(new Date())?'<button class="btn sec" id="fHelp" style="width:100%;margin-top:8px">איך בונים את קיצור הדרך</button>':''}`;
   open('#shAdd');
-  const fill=o=>{$('#fAct').value=r0(o.act);$('#fRest').value=o.rest?r0(o.rest):''};
+  const setMode=v=>{S.fitMode=v;LS.set('kal-set',S);$('#fMode').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+    $('#fActL').textContent=v==='tot'?'סה״כ שנשרף היום':'פעילות (אנרגיה פעילה)';$('#fRestW').style.display=v==='tot'?'none':''};
+  setMode(f.act>0&&!f.tot?'act':mode());
+  $('#fMode').onclick=ev=>{const b=ev.target.closest('button');if(b)setMode(b.dataset.v)};
+  const fill=o=>{if(o.rest>0)setMode('act');$('#fAct').value=r0(o.act);$('#fRest').value=o.rest?r0(o.rest):''};
   $('#fTxt').oninput=()=>{const o=parseFit($('#fTxt').value);if(o)fill(o)};
   if($('#fPaste'))$('#fPaste').onclick=async()=>{
     try{const raw=await navigator.clipboard.readText(),o=parseFit(raw);
       if(!o){$('#fTxt').value=String(raw||'').slice(0,200);   // show what was copied, so it is clear what went wrong
         $('#fDiag').innerHTML=raw&&raw.trim()?`<div class="err">בלוח יש טקסט שאינו קלוריות (מופיע בשדה למטה). כנראה קיצור הדרך לא הצליח להעתיק — בדוק את ההרשאה בהגדרות ← קיצורים ← מתקדם.</div>`
           :`<div class="err">הלוח ריק — קיצור הדרך לא העתיק כלום. בדוק את ההרשאה בהגדרות ← קיצורים ← מתקדם.</div>`;return}
-      putFit(o.d,o.act,o.rest);S.scReady=1;LS.set('kal-set',S);close('#shAdd');render();toast('סונכרן ✓ 🔥 '+r0(o.act+o.rest))}
+      if(o.rest>0)putFit(o.d,o.act,o.rest);else if(mode()==='tot')putFit(o.d,0,0,o.act);else putFit(o.d,o.act,0);
+      S.scReady=1;LS.set('kal-set',S);close('#shAdd');render();toast('סונכרן ✓ '+r0(o.act+o.rest)+' קל׳')}
     catch(e){toast('לא הצלחתי לקרוא. הדבק ידנית בשדה למטה.');$('#fTxt').focus()}};
   $('#fC').onclick=()=>close('#shAdd');
   if($('#fHelp'))$('#fHelp').onclick=openHelp;
-  $('#fOk').onclick=()=>{const a=num($('#fAct').value),r=num($('#fRest').value);
-    if(isNaN(a)&&isNaN(r)){delete FIT[day];LS.set('kal-fit',FIT)}else putFit(day,isNaN(a)?0:a,isNaN(r)?0:r);
+  $('#fOk').onclick=()=>{const a=num($('#fAct').value),r=num($('#fRest').value),t=mode()==='tot';
+    if(isNaN(a)&&(t||isNaN(r))){delete FIT[day];LS.set('kal-fit',FIT)}else if(t)putFit(day,0,0,a);else putFit(day,isNaN(a)?0:a,isNaN(r)?0:r);
     close('#shAdd');render();toast('נשמר ✓')};
 }
 function openHelp(){
@@ -1227,7 +1235,7 @@ function openSet(){
       <button class="li" id="sRes"><i>${ic('restore')}</i><div class="t">שחזור מגיבוי</div></button>
     </div>
     <input type="file" id="resF" accept=".json,application/json" hidden>
-    <p class="note" style="text-align:center;margin-top:16px">גרסה 18</p>`;
+    <p class="note" style="text-align:center;margin-top:16px">גרסה 19</p>`;
   open('#shSet');
   $('#sProf').onclick=()=>{close('#shSet');openOnb(1)};
   $('#sTest').onclick=async()=>{const bt=$('#sTest');if(bt.disabled)return;bt.disabled=true;S.key=$('#sKey').value.trim();LS.set('kal-set',S);const o=$('#sTestOut');o.textContent='בודק…';await testConn(o);bt.disabled=false};
