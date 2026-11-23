@@ -510,7 +510,8 @@ function drawReview(){
       <div class="g4">${MAC.map(([k,n])=>`<div><label>${n}</label><input type="number" inputmode="decimal" data-k="${k}" value="${x[k]}"></div>`).join('')}</div></div>`;
   });
   const t=totals([e]);
-  h+=`<button class="btn sec" id="rAdd" style="width:100%;margin-top:10px">+ הוסף מאכל</button>
+  h+=`<button class="btn" id="rCalc" style="width:100%;margin-top:10px">✨ חשב קלוריות לפי השמות והכמויות</button>
+    <button class="btn sec" id="rAdd" style="width:100%;margin-top:8px">+ הוסף מאכל</button>
     <div class="sum"><span>סה״כ</span><span id="rSum">${r0(t.kcal)} קל׳ · ח ${r0(t.protein)} · פ ${r0(t.carbs)} · ש ${r0(t.fat)}</span></div>
     <p class="note">זו הערכה. אם אתה יודע את הכמות המדויקת — תקן את הגרמים.</p>
     <div class="row" style="margin-top:12px">${curIdx>=0?'<button class="btn del" id="rDel">מחק</button>':''}
@@ -531,6 +532,21 @@ function drawReview(){
   $('#addPn').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{e.items.splice(+b.dataset.del,1);drawReview()});
   $('#rAdd').onclick=()=>{e.items.push({name:'',grams:100,kcal:0,protein:0,carbs:0,fat:0});drawReview();
     const all=$('#addPn').querySelectorAll('.ed');all[all.length-1].querySelector('input').focus()};
+  $('#rCalc').onclick=async()=>{
+    const named=e.items.filter(x=>x.name.trim());
+    if(!named.length){toast('כתוב קודם את שם המאכל');return}
+    const b=$('#rCalc');b.disabled=true;b.textContent='מחשב…';busy=true;
+    try{
+      const o=await analyze({text:named.map(x=>`${x.name.trim()}${x.grams>0?` — ${x.grams} גרם`:''}`).join('\n')+
+        '\nהשתמש בדיוק בכמויות שכתובות (אם כתובות). החזר פריט אחד לכל שורה.'});
+      busy=false;
+      if(!o.items?.length){toast('לא הצלחתי לזהות. נסה שם אחר.');b.disabled=false;b.textContent='✨ חשב שוב';return}
+      e.items=o.items.map(x=>{const it={name:x.name,grams:r0(x.grams),kcal:r0(x.kcal),protein:r1(x.protein),carbs:r1(x.carbs),fat:r1(x.fat)};it.base={...it};return it});
+      drawReview();toast('חושב ✓ בדוק ושמור');
+    }catch(er){busy=false;b.disabled=false;b.textContent='✨ חשב קלוריות לפי השמות והכמויות';
+      toast((ERR[er.code]||ERR.srv).slice(0,80));
+      if(DIAG.last)$('#addPn').insertAdjacentHTML('beforeend',`<div class="err" dir="ltr" style="text-align:left">${esc(DIAG.last)}</div>`)}
+  };
   $('#rC').onclick=()=>close('#shAdd');
   if($('#rDel'))$('#rDel').onclick=()=>{if(!confirm('למחוק את הארוחה?'))return;DB[day].splice(curIdx,1);if(!DB[day].length)delete DB[day];save();close('#shAdd');render()};
   $('#rOk').onclick=()=>{
@@ -569,7 +585,7 @@ function openSet(){
     <div class="row"><button class="btn sec" id="sCsv">📄 טבלה (CSV)</button><button class="btn sec" id="sBak">💾 גיבוי</button></div>
     <button class="btn sec" id="sRes" style="width:100%;margin-top:8px">📥 שחזר מגיבוי</button>
     <input type="file" id="resF" accept=".json,application/json" hidden>
-    <p class="note" style="text-align:center;margin-top:16px">גרסה 6</p>`;
+    <p class="note" style="text-align:center;margin-top:16px">גרסה 7</p>`;
   open('#shSet');
   $('#sC').onclick=()=>close('#shSet');
   $('#sSex').onclick=ev=>{const b=ev.target.closest('button');if(!b)return;$('#sSex').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z===b))};
