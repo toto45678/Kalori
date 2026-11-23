@@ -637,6 +637,126 @@ function localCalc(text,gramsHint){
   return {items,unknown};
 }
 
+/* ---------- read values from a screenshot or pasted text, on the phone (no AI) ----------
+   OCR = tesseract.js (Apache-2.0) served from ocr/, Hebrew + English, loaded only when first used */
+const NUT={
+  kcal:'קלוריות|קלוריה|קק"ל|קק״ל|קל[\'׳]|אנרגיה|kcal|calories|calorie',
+  protein:'חלבונים|חלבון|protein',
+  carbs:'פחמימות|פחמימה|carbohydrates|carbohydrate|carbs',
+  fat:'שומנים|שומן|fat'};
+const NUM='(\\d+(?:[.,]\\d+)?)(?:\\s*[-–~]\\s*(\\d+(?:[.,]\\d+)?))?';
+const SUBROW=/רווי|טראנס|מתוכ|מתוכם|סוכרים|saturated|trans|sugars|of which|כולסטרול|נתרן|סיבים|fiber|sodium/i;
+const ANYKW=new RegExp(Object.values(NUT).join('|'),'i');
+const toN=(a,b)=>{const x=parseFloat(String(a).replace(',','.'));if(b==null)return x;return (x+parseFloat(String(b).replace(',','.')))/2};
+function nutVals(line){
+  const v={};if(SUBROW.test(line))return v;
+  for(const [k,kw] of Object.entries(NUT)){
+    let m=line.match(new RegExp(NUM+'\\s*(?:גרם|גר|ג[\'׳]?|g|kcal)?\\s*(?:'+kw+')','i'));
+    if(!m)m=line.match(new RegExp('(?:'+kw+')[^\\d\\n|]{0,18}'+NUM,'i'));
+    if(m)v[k]=toN(m[1],m[2]);
+  }
+  return v;
+}
+function gramsOf(line){
+  const re=/(\d+(?:[.,]\d+)?)\s*(?:גרם|גר|ג['׳]|g|מ"ל|מ״ל|ml)(?![a-zא-ת])/gi;let m;
+  while((m=re.exec(line))){const before=line.slice(Math.max(0,m.index-14),m.index),after=line.slice(m.index+m[0].length,m.index+m[0].length+12);
+    if(!ANYKW.test(before)&&!ANYKW.test(after))return toN(m[1])}
+  return null;
+}
+function cleanName(line){
+  let s=line.replace(/[\u{1F000}-\u{1FFFF}\u2600-\u27BF\uFE0F]/gu,'').replace(/^[\s\-–•*·▪◦►✔✅0-9.)]+/,'');
+  s=s.split(/[:：|]|\s[-–—]\s|\(|\d/)[0].trim();
+  s=s.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,'');
+  let w=s.split(/\s+/).map(x=>x.replace(/^[^A-Za-z\u05d0-\u05ea]+|[^A-Za-z\u05d0-\u05ea'"׳״]+$/g,'')).filter(x=>/[A-Za-z\u05d0-\u05ea]/.test(x));
+  if(w.some(x=>/[\u05d0-\u05ea]/.test(x)))w=w.filter(x=>!/^[A-Za-z]{1,2}$/.test(x));   // OCR'd emoji / icons
+  return w.join(' ').trim();
+}
+const isTotal=l=>/סה"כ|סה״כ|סהכ|סך הכל|סך־הכל|בסך הכל|סיכום|total/i.test(l);
+function parseNutri(text){
+  const lines=String(text).replace(/\r/g,'').split('\n').map(l=>l.replace(/[*#_`>]/g,' ').replace(/\s+/g,' ').trim()).filter(Boolean);
+  const items=[];let cur=null,total=null,cols=null;
+  // nutrition label: values per 100 g
+  const full=lines.join(' ');
+  if(/ערכים תזונתיים|סימון תזונתי|nutrition facts|100\s*(?:גרם|ג['׳]|g|מ"ל|מ״ל|ml)/i.test(full)&&/אנרגיה|energy|kcal/i.test(full)&&!lines.some(l=>l.includes('|'))){
+    const v={};for(const l of lines){const x=nutVals(l);for(const k in x)if(v[k]==null)v[k]=x[k]}
+    if(v.kcal!=null||v.protein!=null)return {items:[fin({name:'',grams:100,...v})],label:1};
+  }
+  for(const l of lines){
+    if(l.includes('|')){                         // markdown table
+      const c=l.split('|').map(x=>x.trim()).filter((x,i,a)=>!(x===''&&(i===0||i===a.length-1)));
+      if(c.every(x=>/^:?-{2,}:?$/.test(x)||x===''))continue;
+      const hdr={};c.forEach((x,i)=>{for(const [k,kw] of Object.entries(NUT))if(new RegExp(kw,'i').test(x)&&hdr[k]==null)hdr[k]=i;
+        if(/כמות|משקל|גרם|amount|portion|serving/i.test(x)&&hdr.g==null&&!ANYKW.test(x))hdr.g=i});
+      if(Object.keys(hdr).some(k=>k!=='g')&&c.filter(x=>/\d/.test(x)).length<2){cols=hdr;continue}
+      if(cols){const it={name:c[0].replace(/[\u{1F000}-\u{1FFFF}\u2600-\u27BF\uFE0F]/gu,'').trim()};
+        for(const k of ['kcal','protein','carbs','fat'])if(cols[k]!=null&&c[cols[k]]){const m=c[cols[k]].match(new RegExp(NUM));if(m)it[k]=toN(m[1],m[2])}
+        it.grams=cols.g!=null&&c[cols.g]?gramsOf(c[cols.g]+' ג׳')||toN((c[cols.g].match(/\d+/)||[])[0]):gramsOf(c[0]);
+        if(isTotal(l)){total=it;continue}
+        if(it.kcal!=null||it.protein!=null)items.push(it);continue}
+    }
+    const v=nutVals(l),has=Object.keys(v).length>0,nm=cleanName(l),named=nm.length>=2&&!ANYKW.test(nm)&&!isTotal(nm);
+    if(isTotal(l)){if(has)total=Object.assign(total||{},v);cur=null;continue}
+    if(has){
+      if(named){cur={name:nm,grams:gramsOf(l),...v};items.push(cur)}
+      else if(cur){for(const k in v)if(cur[k]==null)cur[k]=v[k];if(cur.grams==null)cur.grams=gramsOf(l)}
+      else{cur={name:'',grams:gramsOf(l),...v};items.push(cur)}
+    }else if(named&&nm.length<=45&&!/[:?]$/.test(l)){cur={name:nm,grams:gramsOf(l)};items.push(cur)}
+    else if(cur&&cur.grams==null){const g=gramsOf(l);if(g)cur.grams=g}
+  }
+  let out=items.filter(x=>x.kcal!=null||x.protein!=null||x.carbs!=null||x.fat!=null);
+  if(!out.length&&total)out=[{name:'ארוחה',...total}];
+  return {items:out.map(fin),total};
+}
+function fin(x){
+  const p=+x.protein||0,c=+x.carbs||0,f=+x.fat||0;
+  const kcal=x.kcal!=null?x.kcal:(p*4+c*4+f*9);
+  return {name:x.name||'מאכל',grams:r0(x.grams||100),kcal:r0(kcal),protein:r1(p),carbs:r1(c),fat:r1(f),done:1};
+}
+let OCRW=null;
+function loadScript(src){return new Promise((ok,bad)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=bad;document.head.appendChild(s)})}
+async function ocr(file,onp){
+  if(!window.Tesseract)await loadScript('ocr/tesseract.min.js');
+  if(!OCRW)OCRW=await Tesseract.createWorker(['heb','eng'],1,{workerPath:'ocr/worker.min.js',corePath:'ocr/',langPath:'ocr/lang',gzip:true,
+    logger:m=>onp&&onp(m)});
+  const img=await prepImg(file);
+  const {data}=await OCRW.recognize(img);
+  return data.text||'';
+}
+// grayscale, dark screenshots turned light, small ones enlarged — helps the reader
+function prepImg(file){return new Promise((ok,bad)=>{const u=URL.createObjectURL(file),im=new Image();
+  im.onload=()=>{const sc=im.width<900?2:im.width>2400?.6:1,c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);
+    const x=c.getContext('2d');x.drawImage(im,0,0,c.width,c.height);const d=x.getImageData(0,0,c.width,c.height),p=d.data;let sum=0;
+    for(let i=0;i<p.length;i+=4){const g=.3*p[i]+.59*p[i+1]+.11*p[i+2];p[i]=p[i+1]=p[i+2]=g;sum+=g}
+    if(sum/(p.length/4)<110)for(let i=0;i<p.length;i+=4){p[i]=p[i+1]=p[i+2]=255-p[i]}
+    x.putImageData(d,0,0);URL.revokeObjectURL(u);c.toBlob(b=>ok(b),'image/png')};
+  im.onerror=()=>{URL.revokeObjectURL(u);bad(new Error('img'))};im.src=u})}
+function openRead(){
+  $('#addPn').innerHTML=`<h2>📄 קריאת ערכים מצילום מסך</h2>
+    <p class="note">צלם מסך של תשובה מ-Gemini / ChatGPT, או של טבלת ערכים תזונתיים על מוצר. הקריאה נעשית <b>בטלפון, בלי AI</b>.</p>
+    <button class="btn" id="rdPick" style="width:100%;margin-top:6px">🖼️ בחר צילום מסך</button>
+    <input type="file" id="rdFile" accept="image/*" hidden>
+    <div class="note" id="rdProg"></div>
+    <label class="f">או הדבק כאן את הטקסט (למשל "העתק" מהתשובה)<textarea class="i" id="rdTxt" style="min-height:120px"></textarea></label>
+    <div class="row" style="margin-top:12px"><button class="btn sec" id="rdC">ביטול</button><button class="btn" id="rdGo">קרא ערכים</button></div>`;
+  open('#shAdd');
+  $('#rdC').onclick=()=>close('#shAdd');
+  $('#rdPick').onclick=()=>{$('#rdFile').value='';$('#rdFile').click()};
+  $('#rdFile').onchange=async ev=>{const f=ev.target.files[0];if(!f)return;
+    const pg=$('#rdProg'),bt=$('#rdPick');bt.disabled=true;busy=true;pg.textContent='טוען את קורא הטקסט (פעם ראשונה לוקח רגע)…';
+    try{const t=await ocr(f,m=>{if(m.status==='recognizing text')pg.textContent=`קורא… ${Math.round(m.progress*100)}%`;
+        else if(/load/.test(m.status))pg.textContent='טוען את קורא הטקסט (פעם ראשונה לוקח רגע)…'});
+      busy=false;bt.disabled=false;$('#rdTxt').value=t.trim();pg.textContent='';readGo(true)}
+    catch(e){busy=false;bt.disabled=false;pg.textContent='לא הצלחתי לקרוא את התמונה. נסה להדביק טקסט.'}};
+  $('#rdGo').onclick=()=>readGo(false);
+}
+function readGo(fromImg){
+  const t=$('#rdTxt').value;if(!t.trim()){toast('אין טקסט לקרוא');return}
+  const r=parseNutri(t);
+  if(!r.items.length){$('#rdProg').innerHTML=`<span style="color:var(--warn)">לא מצאתי קלוריות בטקסט.</span> ${fromImg?'בדוק את הטקסט שזוהה למטה, תקן ולחץ "קרא ערכים".':''}`;return}
+  openReview({meal:mealNow(),items:r.items},-1);
+  toast(r.label?'נקרא כ-100 גרם — עדכן את הכמות שאכלת':`נקראו ${r.items.length} פריטים — בדוק ושמור`);
+}
+
 /* ---------- add flow ---------- */
 let busy=false,cur=null,curIdx=-1;
 function mealNow(){const h=new Date().getHours();return h<11?'בוקר':h<16?'צהריים':h<22?'ערב':'נשנוש'}
@@ -663,6 +783,7 @@ $('#bTxt').onclick=()=>{
   $('#addPn').innerHTML=`<h2>מה אכלת?</h2>
     <label class="f">תאר במילים<textarea class="i" id="desc" placeholder="למשל: 2 פרוסות לחם מלא עם חומוס ומלפפון"></textarea></label>
     <div class="row" style="margin-top:10px"><button class="btn sec" id="dMan">הזנה ידנית</button><button class="btn" id="dGo">✨ חשב</button></div>
+    <button class="btn sec" id="dRead" style="width:100%;margin-top:8px">📄 קרא ערכים מצילום מסך / טקסט</button>
     ${fav.length?`<h2 style="margin-top:16px;font-size:1rem">⭐ הקבועים שלך <span class="mut">(לחיצה מוסיפה)</span></h2>
       <div class="chips" id="dFav">${fav.map((o,i)=>`<button data-i="${i}">${esc(o.name)} <span class="mut">${r0(o.kcal*o.unit/100)}</span></button>`).join('')}</div>`:''}
     ${prev.length?`<h2 style="margin-top:16px;font-size:1rem">🔁 ארוחות קודמות <span class="mut">(לחיצה = שוב)</span></h2>
@@ -673,6 +794,7 @@ $('#bTxt').onclick=()=>{
     d.value=(d.value.trim()?d.value.trim().replace(/[,،]\s*$/,'')+', ':'')+o.name;b.classList.add('on')};
   $('#addPn').querySelectorAll('[data-p]').forEach(el=>el.onclick=()=>{const e=JSON.parse(JSON.stringify(prev[+el.dataset.p]));
     delete e.time;delete e.id;e.meal=mealNow();e.items.forEach(x=>{x.done=1});openReview(e,-1)});
+  $('#dRead').onclick=openRead;
   $('#dMan').onclick=()=>openReview({meal:mealNow(),items:[{name:'',grams:100,kcal:0,protein:0,carbs:0,fat:0}]},-1);
   $('#dGo').onclick=()=>{const t=$('#desc').value.trim();if(!t){$('#desc').focus();return}
     const lc=localCalc(t);
@@ -817,7 +939,7 @@ function openSet(){
     <div class="row"><button class="btn sec" id="sCsv">📄 טבלה (CSV)</button><button class="btn sec" id="sBak">💾 גיבוי</button></div>
     <button class="btn sec" id="sRes" style="width:100%;margin-top:8px">📥 שחזר מגיבוי</button>
     <input type="file" id="resF" accept=".json,application/json" hidden>
-    <p class="note" style="text-align:center;margin-top:16px">גרסה 10</p>`;
+    <p class="note" style="text-align:center;margin-top:16px">גרסה 11</p>`;
   open('#shSet');
   $('#sC').onclick=()=>close('#shSet');
   $('#sSex').onclick=ev=>{const b=ev.target.closest('button');if(!b)return;$('#sSex').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z===b))};
