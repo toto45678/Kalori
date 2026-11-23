@@ -88,6 +88,20 @@ table.h td:first-child,table.h th:first-child{text-align:right}
 a{color:var(--acc)}
 .steps{padding-inline-start:20px;margin:6px 0}
 .steps li{margin:4px 0}
+.burn{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.burn .ln{display:flex;justify-content:space-between;font-size:.92rem;margin:3px 0}
+.burn .df{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:10px 12px;border-radius:12px;font-weight:800;font-size:1.05rem}
+.burn .df.ok{background:var(--acc2);color:var(--acc)}
+.burn .df.bad{background:rgba(220,38,38,.1);color:var(--warn)}
+.burn .bt{display:flex;gap:8px;margin-top:10px}
+.burn .bt button{flex:1;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:10px;font-weight:600;font-size:.92rem}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.sel{display:flex;gap:6px;margin-top:4px}
+.sel button{flex:1;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:9px}
+.sel button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+ol.sc{padding-inline-start:22px;margin:8px 0}
+ol.sc li{margin:7px 0;font-size:.93rem}
+code{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:.88rem;direction:ltr;unicode-bidi:isolate}
 .toast{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;z-index:20;font-size:.92rem;opacity:0;transition:.25s;pointer-events:none}
 .toast.on{opacity:1}
 </style>
@@ -116,6 +130,7 @@ a{color:var(--acc)}
       </div>
     </div>
     <div class="bars" id="bars"></div>
+    <div class="burn" id="burn"></div>
   </div>
 
   <div id="meals"></div>
@@ -148,7 +163,9 @@ const MEALS=['בוקר','צהריים','ערב','נשנוש'];
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}};
 let S=LS.get('kal-set',{key:'',goal:{kcal:2000,protein:120,carbs:220,fat:65}});
+S.prof=S.prof||{sex:'m',age:0,h:0,w:0};S.sc=S.sc||'קלוריות כושר';
 let DB=LS.get('kal-db',{});            // {'2026-11-23':[entry,...]}
+let FIT=LS.get('kal-fit',{});          // {'2026-11-23':{act,rest,t}}  burned kcal from Apple Health (via Shortcuts) or typed
 function save(){
   if(LS.set('kal-db',DB))return;
   // storage full: drop the oldest photos and retry
@@ -162,6 +179,111 @@ let day=dk(new Date());
 /* ---------- totals ---------- */
 function totals(list){const t={kcal:0,protein:0,carbs:0,fat:0};
   for(const e of list||[])for(const it of e.items)for(const k in t)t[k]+=+it[k]||0;return t}
+
+/* ---------- burned calories / deficit ---------- */
+function bmr(){const p=S.prof;if(!(p.age>0&&p.h>0&&p.w>0))return 0;return 10*p.w+6.25*p.h-5*p.age+(p.sex==='f'?-161:5)}
+function dayFrac(){const n=new Date();return (n.getHours()*60+n.getMinutes())/1440}
+// {rest,act,tot,restEst} or null when nothing is known about that day
+function burnOf(d){
+  const f=FIT[d],today=d===dk(new Date()),b=bmr();
+  let rest=f&&f.rest>0?f.rest:null,act=f?(+f.act||0):0,restEst=false;
+  if(rest==null&&b){rest=today?b*dayFrac():b;restEst=true}
+  if(rest==null&&!f)return null;
+  return {rest:rest||0,act,tot:(rest||0)+act,restEst,noRest:rest==null,t:f&&f.t};
+}
+function renderBurn(t){
+  const el=$('#burn'),bu=burnOf(day),today=day===dk(new Date());
+  let h='';
+  if(bu&&!bu.noRest){
+    const df=bu.tot-t.kcal;
+    h+=`<div class="ln"><span>🍽️ אכלת</span><b>${r0(t.kcal)}</b></div>
+      <div class="ln"><span>🔥 שרפת${today?' עד עכשיו':''}</span><b>${r0(bu.tot)}</b></div>
+      <div class="ln mut"><span>מנוחה ${r0(bu.rest)}${bu.restEst?' (חישוב)':''} + פעילות ${r0(bu.act)}</span>
+      <span>${bu.t?'עודכן '+bu.t:''}</span></div>
+      <div class="df ${df>=0?'ok':'bad'}"><span>${df>=0?'✅ גירעון':'⚠️ עודף'}</span><span>${r0(Math.abs(df))} קל׳</span></div>`;
+  }else if(bu&&bu.noRest){
+    h+=`<div class="ln"><span>🔥 פעילות</span><b>${r0(bu.act)}</b></div>
+      <div class="note">כדי לחשב גירעון חסרה "אנרגיה במנוחה". הכנס גיל, גובה ומשקל ב-⚙️ הגדרות.</div>`;
+  }else{
+    h+=`<div class="note">⌚ חבר את אפליקציית הבריאות כדי לראות כמה שרפת ומה הגירעון היומי.</div>`;
+  }
+  h+=`<div class="bt">${today?'<button id="bSync">⌚ סנכרן כושר</button>':''}<button id="bFitMan">✏️ הזן שריפה</button></div>`;
+  el.innerHTML=h;
+  if($('#bSync'))$('#bSync').onclick=syncFit;
+  $('#bFitMan').onclick=()=>openFitSheet(false);
+}
+let syncPending=0;
+function syncFit(){
+  if(!S.scReady){openHelp();return}
+  syncPending=Date.now();
+  location.href='shortcuts://run-shortcut?name='+encodeURIComponent(S.sc);
+}
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden&&syncPending&&Date.now()-syncPending<5*60e3){syncPending=0;setTimeout(()=>openFitSheet(true),300)}
+});
+function num(s){
+  s=String(s||'').replace(/[^\d.,]/g,'');if(!s)return NaN;
+  if(s.includes('.')&&s.includes(','))s=s.replace(/,/g,'');
+  else if(/^\d{1,3}(,\d{3})+$/.test(s))s=s.replace(/,/g,'');
+  else s=s.replace(',','.');
+  return parseFloat(s);
+}
+function parseFit(txt){
+  const m=String(txt||'').match(/KALFIT\s*;([^;\n]*);([^;\n]*)(?:;([^;\n]*))?/i);if(!m)return null;
+  const act=num(m[1]),rest=num(m[2]);
+  let d=m[3]&&m[3].match(/(\d{4})-(\d{2})-(\d{2})/)?m[3].match(/\d{4}-\d{2}-\d{2}/)[0]:dk(new Date());
+  if(isNaN(act)&&isNaN(rest))return null;
+  return {d,act:isNaN(act)?0:act,rest:isNaN(rest)?0:rest};
+}
+function putFit(d,act,rest){FIT[d]={act:r0(act),rest:r0(rest),t:new Date().toTimeString().slice(0,5)};LS.set('kal-fit',FIT)}
+function openFitSheet(fromShortcut){
+  const f=FIT[day]||{};
+  $('#addPn').innerHTML=`<h2>⌚ קלוריות שנשרפו</h2>
+    ${fromShortcut?`<p class="note">קיצור הדרך העתיק את הנתונים. לחץ על הכפתור ואז על "הדבק" שקופץ.</p>
+      <button class="btn" id="fPaste" style="width:100%;font-size:1.1rem;padding:16px">📋 הדבק נתונים</button>`:''}
+    <div class="g2" style="margin-top:12px">
+      <label class="f" style="margin:0">פעילות (אנרגיה פעילה)<input class="i" type="number" inputmode="numeric" id="fAct" value="${f.act??''}"></label>
+      <label class="f" style="margin:0">מנוחה (ריק = חישוב)<input class="i" type="number" inputmode="numeric" id="fRest" value="${f.rest||''}"></label>
+    </div>
+    <label class="f">או הדבק כאן את הטקסט מקיצור הדרך<input class="i" id="fTxt" placeholder="KALFIT;…" dir="ltr"></label>
+    <div class="row" style="margin-top:14px"><button class="btn sec" id="fC">ביטול</button><button class="btn" id="fOk">שמור</button></div>
+    ${day===dk(new Date())?'<button class="btn sec" id="fHelp" style="width:100%;margin-top:8px">❔ איך בונים את קיצור הדרך</button>':''}`;
+  open('#shAdd');
+  const fill=o=>{$('#fAct').value=r0(o.act);$('#fRest').value=o.rest?r0(o.rest):''};
+  $('#fTxt').oninput=()=>{const o=parseFit($('#fTxt').value);if(o)fill(o)};
+  if($('#fPaste'))$('#fPaste').onclick=async()=>{
+    try{const o=parseFit(await navigator.clipboard.readText());
+      if(!o){toast('לא מצאתי נתונים בלוח. הרץ שוב את קיצור הדרך.');return}
+      putFit(o.d,o.act,o.rest);S.scReady=1;LS.set('kal-set',S);close('#shAdd');render();toast('סונכרן ✓ 🔥 '+r0(o.act+o.rest))}
+    catch(e){toast('לא הצלחתי לקרוא. הדבק ידנית בשדה למטה.');$('#fTxt').focus()}};
+  $('#fC').onclick=()=>close('#shAdd');
+  if($('#fHelp'))$('#fHelp').onclick=openHelp;
+  $('#fOk').onclick=()=>{const a=num($('#fAct').value),r=num($('#fRest').value);
+    if(isNaN(a)&&isNaN(r)){delete FIT[day];LS.set('kal-fit',FIT)}else putFit(day,isNaN(a)?0:a,isNaN(r)?0:r);
+    close('#shAdd');render();toast('נשמר ✓')};
+}
+function openHelp(){
+  $('#addPn').innerHTML=`<h2>⌚ חיבור לאפליקציית הבריאות</h2>
+    <p class="note">אפליקציה מהאתר לא יכולה לקרוא את הבריאות ישירות, אז נבנה פעם אחת קיצור דרך קטן שקורא את המספרים ומעתיק אותם. בערך 3 דקות.</p>
+    <ol class="sc">
+      <li>פתח את אפליקציית <b>קיצורים</b> (Shortcuts) ולחץ <b>+</b></li>
+      <li>קרא לקיצור בדיוק: <code>${esc(S.sc)}</code></li>
+      <li>הוסף פעולה <b>חפש דגימות בריאות</b> (Find Health Samples): סוג = <b>אנרגיה פעילה</b> (Active Energy), תאריך התחלה = <b>היום</b> (Today)</li>
+      <li>הוסף <b>חשב סטטיסטיקה</b> (Calculate Statistics): <b>סכום</b> (Sum)</li>
+      <li>שוב <b>חפש דגימות בריאות</b>: סוג = <b>אנרגיה במנוחה</b> (Resting Energy), היום</li>
+      <li>שוב <b>חשב סטטיסטיקה</b>: <b>סכום</b>. אם הוא בוחר אוטומטית את התוצאה הקודמת, לחץ ובחר את דגימות המנוחה</li>
+      <li>הוסף <b>טקסט</b> (Text) וכתוב בו: <code>KALFIT;</code> ואז את המשתנה <b>סטטיסטיקה</b> הראשון, <code>;</code> ואת השני</li>
+      <li>הוסף <b>העתק ללוח</b> (Copy to Clipboard). סיימת!</li>
+    </ol>
+    <p class="note">בפעם הראשונה האייפון ישאל אם לתת גישה לבריאות — לחץ אפשר.<br>
+    אחרי שהקיצור רץ, חזור לכאן ולחץ <b>📋 הדבק נתונים</b>.<br>
+    אין לך שעון אפל? "אנרגיה במנוחה" תהיה ריקה, והאפליקציה תחשב אותה לפי הפרופיל בהגדרות.</p>
+    <label class="f">שם הקיצור<input class="i" id="hName" value="${esc(S.sc)}"></label>
+    <div class="row" style="margin-top:14px"><button class="btn sec" id="hX">סגור</button><button class="btn" id="hRun">בניתי — הרץ ▶</button></div>`;
+  open('#shAdd');
+  $('#hX').onclick=()=>close('#shAdd');
+  $('#hRun').onclick=()=>{S.sc=$('#hName').value.trim()||S.sc;S.scReady=1;LS.set('kal-set',S);close('#shAdd');syncFit()};
+}
 
 /* ---------- main render ---------- */
 function render(){
@@ -180,6 +302,7 @@ function render(){
   $('#ringC').style.stroke=left>=0?'var(--kc)':'var(--warn)';
   $('#bars').innerHTML=MAC.slice(1).map(([k,n,c])=>`<div class="bar"><div class="t"><span>${n}</span><span>${r0(t[k])} / ${g[k]} ג׳</span></div>
     <div class="tr"><div class="fi" style="width:${Math.min(100,t[k]/(g[k]||1)*100)}%;background:${c}"></div></div></div>`).join('');
+  renderBurn(t);
   if(!list.length){$('#meals').innerHTML='<div class="card empty">עוד לא נרשם כלום ביום הזה.<br>לחץ על <b>📷 צלם אוכל</b> כדי להתחיל.</div>';return}
   let h='';
   for(const m of MEALS){
@@ -386,21 +509,32 @@ function openSet(){
       לא צריך כרטיס אשראי. המפתח נשמר רק בטלפון הזה.</div>
     <h2 style="margin-top:18px">יעד יומי</h2>
     <div class="g4">${MAC.map(([k,n])=>`<div><label>${n}${k==='kcal'?'':' (ג׳)'}</label><input type="number" inputmode="numeric" id="g_${k}" value="${g[k]}"></div>`).join('')}</div>
+    <h2 style="margin-top:18px">פרופיל (לחישוב שריפה במנוחה)</h2>
+    <div class="sel" id="sSex"><button data-s="m" class="${S.prof.sex!=='f'?'on':''}">זכר</button><button data-s="f" class="${S.prof.sex==='f'?'on':''}">נקבה</button></div>
+    <div class="g4" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+      <div><label>גיל</label><input type="number" inputmode="numeric" id="pA" value="${S.prof.age||''}"></div>
+      <div><label>גובה (ס״מ)</label><input type="number" inputmode="numeric" id="pH" value="${S.prof.h||''}"></div>
+      <div><label>משקל (ק״ג)</label><input type="number" inputmode="decimal" id="pW" value="${S.prof.w||''}"></div></div>
+    <div class="note">משמש רק אם אין "אנרגיה במנוחה" מהשעון. ${bmr()?'עכשיו: '+r0(bmr())+' קל׳ ביום במנוחה.':''}</div>
     <div class="row" style="margin-top:16px"><button class="btn sec" id="sC">ביטול</button><button class="btn" id="sOk">שמור</button></div>
+    <button class="btn sec" id="sFit" style="width:100%;margin-top:8px">⌚ חיבור לאפליקציית הבריאות</button>
     <h2 style="margin-top:22px">גיבוי</h2>
     <div class="row"><button class="btn sec" id="sCsv">📄 טבלה (CSV)</button><button class="btn sec" id="sBak">💾 גיבוי</button></div>
     <button class="btn sec" id="sRes" style="width:100%;margin-top:8px">📥 שחזר מגיבוי</button>
     <input type="file" id="resF" accept=".json,application/json" hidden>`;
   open('#shSet');
   $('#sC').onclick=()=>close('#shSet');
+  $('#sSex').onclick=ev=>{const b=ev.target.closest('button');if(!b)return;$('#sSex').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z===b))};
+  $('#sFit').onclick=()=>{close('#shSet');openHelp()};
   $('#sOk').onclick=()=>{S.key=$('#sKey').value.trim();for(const [k] of MAC){const v=parseFloat($('#g_'+k).value);if(v>0)S.goal[k]=v}
+    S.prof={sex:$('#sSex .on').dataset.s,age:+$('#pA').value||0,h:+$('#pH').value||0,w:num($('#pW').value)||0};
     LS.set('kal-set',S);localStorage.removeItem('kal-models');close('#shSet');render();toast('נשמר ✓')};
   $('#sCsv').onclick=exportCsv;
-  $('#sBak').onclick=()=>download('kalori-backup-'+dk(new Date())+'.json',JSON.stringify({v:1,goal:S.goal,db:DB}),'application/json');
+  $('#sBak').onclick=()=>download('kalori-backup-'+dk(new Date())+'.json',JSON.stringify({v:2,goal:S.goal,prof:S.prof,db:DB,fit:FIT}),'application/json');
   $('#sRes').onclick=()=>{$('#resF').value='';$('#resF').click()};
   $('#resF').onchange=async ev=>{const f=ev.target.files[0];if(!f)return;
     try{const o=JSON.parse(await f.text());if(!o.db)throw 0;if(!confirm('לשחזר? זה יחליף את מה שיש עכשיו.'))return;
-      DB=o.db;if(o.goal)S.goal=o.goal;LS.set('kal-set',S);save();close('#shSet');render();toast('שוחזר ✓')}
+      DB=o.db;if(o.goal)S.goal=o.goal;if(o.prof)S.prof=o.prof;if(o.fit){FIT=o.fit;LS.set('kal-fit',FIT)}LS.set('kal-set',S);save();close('#shSet');render();toast('שוחזר ✓')}
     catch(e){toast('קובץ גיבוי לא תקין')}};
 }
 function download(name,text,type){
@@ -421,12 +555,19 @@ $('#bHist').onclick=()=>{
   const g=S.goal,days=[];for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(dk(d))}
   const tt=days.map(d=>totals(DB[d]));const mx=Math.max(g.kcal*1.2,...tt.map(t=>t.kcal));
   const last7=tt.slice(-7).filter(t=>t.kcal>0);const avg=k=>last7.length?r0(last7.reduce((s,t)=>s+t[k],0)/last7.length):0;
+  const dfOf=(d,t)=>{const b=burnOf(d);return b&&!b.noRest&&t.kcal>0?b.tot-t.kcal:null};
+  const w7=days.slice(-7).map((d,i)=>dfOf(d,tt[7+i])).filter(x=>x!=null),wSum=w7.reduce((s,x)=>s+x,0);
   $('#histPn').innerHTML=`<h2>14 ימים אחרונים</h2>
     <div class="wk">${days.map((d,i)=>`<div><i class="${tt[i].kcal>g.kcal?'ov':''}" style="height:${tt[i].kcal/mx*100}%"></i>${+d.slice(8)}</div>`).join('')}</div>
     <p class="mut">ממוצע ב-7 הימים האחרונים (ימים עם רישום): <b>${avg('kcal')}</b> קל׳ · ח ${avg('protein')} · פ ${avg('carbs')} · ש ${avg('fat')}</p>
-    <table class="h"><tr><th>יום</th><th>קל׳</th><th>חלבון</th><th>פחמ׳</th><th>שומן</th></tr>
-    ${days.slice().reverse().map((d,i)=>{const t=tt[13-i];return t.kcal?`<tr data-d="${d}"><td>${new Date(d+'T12:00').toLocaleDateString('he-IL',{weekday:'short',day:'numeric',month:'numeric'})}</td>
-      <td style="color:${t.kcal>g.kcal?'var(--warn)':''}">${r0(t.kcal)}</td><td>${r0(t.protein)}</td><td>${r0(t.carbs)}</td><td>${r0(t.fat)}</td></tr>`:''}).join('')}</table>
+    ${w7.length?`<div class="sum" style="background:${wSum>=0?'var(--acc2)':'rgba(220,38,38,.1)'};color:${wSum>=0?'var(--acc)':'var(--warn)'}">
+      <span>${wSum>=0?'גירעון':'עודף'} ב-7 ימים (${w7.length} ימים עם נתונים)</span><span>${r0(Math.abs(wSum))} קל׳ ≈ ${(Math.abs(wSum)/7700).toFixed(2)} ק״ג</span></div>`:''}
+    <table class="h" style="margin-top:10px"><tr><th>יום</th><th>אכלת</th><th>שרפת</th><th>גירעון</th><th>ח/פ/ש</th></tr>
+    ${days.slice().reverse().map((d,i)=>{const t=tt[13-i],b=burnOf(d),df=dfOf(d,t);return t.kcal||FIT[d]?`<tr data-d="${d}"><td>${new Date(d+'T12:00').toLocaleDateString('he-IL',{weekday:'short',day:'numeric',month:'numeric'})}</td>
+      <td style="color:${t.kcal>g.kcal?'var(--warn)':''}">${r0(t.kcal)}</td><td>${b&&!b.noRest?r0(b.tot):'–'}</td>
+      <td style="color:${df==null?'':df>=0?'var(--acc)':'var(--warn)'}">${df==null?'–':(df<0?'+':'')+r0(Math.abs(df))}</td>
+      <td class="mut">${r0(t.protein)}/${r0(t.carbs)}/${r0(t.fat)}</td></tr>`:''}).join('')}</table>
+    <p class="note">גירעון ירוק = אכלת פחות ממה ששרפת. +אדום = עודף. בערך 7,700 קל׳ = ק״ג אחד. זו הערכה.</p>
     <div class="row" style="margin-top:14px"><button class="btn sec" id="hCsv">📄 ייצא טבלה</button><button class="btn" id="hC">סגור</button></div>`;
   open('#shHist');
   $('#histPn').querySelectorAll('tr[data-d]').forEach(tr=>tr.onclick=()=>{day=tr.dataset.d;close('#shHist');render()});
