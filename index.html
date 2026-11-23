@@ -590,13 +590,28 @@ const FOODS=`תפוח|תפוחים|תפוח ירוק|תפוח אדום|תפוח 
 אבקת חלבון|שייק חלבון;380,75,10,5;30`.split('\n').map(l=>{const [n,v,u]=l.split(';');const [kcal,protein,carbs,fat]=v.split(',').map(Number);
   return {names:n.split('|'),kcal,protein,carbs,fat,unit:+u}});
 const NUMW={'אחד':1,'אחת':1,'שני':2,'שתי':2,'שניים':2,'שתיים':2,'שלוש':3,'שלושה':3,'ארבע':4,'ארבעה':4,'חמש':5,'חמישה':5,'שש':6,'שישה':6,'חצי':.5,'רבע':.25};
-const FIDX=[];for(const f of FOODS)for(const n of f.names)FIDX.push([n,f]);FIDX.sort((a,b)=>b[0].length-a[0].length);
-const STOP=/^(עם|של|גם|קצת|מנה|מנות|יחידה|יחידות|גרם|גר|ג|כף|כפות|כפית|כפיות|כוס|כוסות|ו|על|בלי|ללא|קטן|קטנה|גדול|גדולה|חצי|רבע|\d+(\.\d+)?)$/;
 const normF=s=>' '+String(s).replace(/[֑-ׇ]/g,'').replace(/[׳`]/g,"'").replace(/[״]/g,'"').replace(/[,.;:!?()\-–—+\n]/g,' ').replace(/\s+/g,' ').trim()+' ';
+// MY = what YOU eat: every saved item is remembered (per 100 g + your usual amount) and wins over the table and over Google
+let MY=LS.get('kal-my',null);
+const keyOf=n=>normF(n).trim();
+function learn(it){
+  const n=String(it.name||'').trim(),g=+it.grams||0;if(!n||!(g>0)||!(+it.kcal>0))return;
+  const k=keyOf(n),o=MY[k]||{name:n,n:0},f=100/g;
+  Object.assign(o,{name:n,kcal:r1(it.kcal*f),protein:r1(it.protein*f),carbs:r1(it.carbs*f),fat:r1(it.fat*f),unit:r0(g),n:o.n+1,last:Date.now()});
+  MY[k]=o;
+}
+if(!MY){MY={};for(const d of Object.keys(DB).sort())for(const e of DB[d])for(const it of e.items)learn(it);LS.set('kal-my',MY)}
+let FIDX=null;
+function fidx(){if(FIDX)return FIDX;FIDX=[];
+  for(const o of Object.values(MY))FIDX.push([keyOf(o.name),{names:[o.name],kcal:o.kcal,protein:o.protein,carbs:o.carbs,fat:o.fat,unit:o.unit,my:1}]);
+  for(const f of FOODS)for(const n of f.names)if(!MY[keyOf(n)])FIDX.push([n,f]);
+  FIDX=FIDX.filter(x=>x[0]);FIDX.sort((a,b)=>b[0].length-a[0].length);return FIDX}
+function saveMy(){FIDX=null;LS.set('kal-my',MY)}
+const STOP=/^(עם|של|גם|קצת|מנה|מנות|יחידה|יחידות|גרם|גר|ג|כף|כפות|כפית|כפיות|כוס|כוסות|ו|על|בלי|ללא|קטן|קטנה|גדול|גדולה|חצי|רבע|\d+(\.\d+)?)$/;
 // text → {items, unknown:[words]}; gramsHint = grams the user typed for a single item
 function localCalc(text,gramsHint){
   let s=normF(text);const items=[];
-  for(const [n,f] of FIDX){
+  for(const [n,f] of fidx()){
     const re=new RegExp(`(^| )([והבמש]?)${n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}(?= )`);let m;
     while((m=s.match(re))){
       const before=s.slice(0,m.index).trim().split(' ').slice(-3);
@@ -614,7 +629,7 @@ function localCalc(text,gramsHint){
       if(g==null&&!isNaN(parseFloat(after[0]))&&/^(גרם|גר|ג)$/.test(after[1]||''))g=parseFloat(after[0]);
       if(g==null)g=gramsHint>0?gramsHint:q*f.unit;
       const k=g/100;
-      items.push({name:f.names[0],grams:r0(g),kcal:r0(f.kcal*k),protein:r1(f.protein*k),carbs:r1(f.carbs*k),fat:r1(f.fat*k)});
+      items.push({my:f.my,name:f.names[0],grams:r0(g),kcal:r0(f.kcal*k),protein:r1(f.protein*k),carbs:r1(f.carbs*k),fat:r1(f.fat*k)});
       s=s.slice(0,m.index)+' # '+s.slice(m.index+m[0].length);   // '#' keeps a used number from passing to the next food
     }
   }
@@ -641,14 +656,27 @@ function askHint(img,thumb){
   $('#hGo').onclick=()=>run({img,thumb,text:$('#hint').value.trim()});
 }
 $('#bTxt').onclick=()=>{
+  const fav=Object.values(MY).sort((a,b)=>b.n-a.n||b.last-a.last).slice(0,16);
+  const seen=new Set(),prev=[];
+  for(const d of Object.keys(DB).sort().reverse()){for(const e of DB[d].slice().reverse()){const k=e.items.map(x=>x.name).join(', ');
+    if(!seen.has(k)){seen.add(k);prev.push(e)}if(prev.length>=6)break}if(prev.length>=6)break}
   $('#addPn').innerHTML=`<h2>מה אכלת?</h2>
     <label class="f">תאר במילים<textarea class="i" id="desc" placeholder="למשל: 2 פרוסות לחם מלא עם חומוס ומלפפון"></textarea></label>
-    <div class="row" style="margin-top:14px"><button class="btn sec" id="dMan">הזנה ידנית</button><button class="btn" id="dGo">✨ חשב</button></div>`;
+    <div class="row" style="margin-top:10px"><button class="btn sec" id="dMan">הזנה ידנית</button><button class="btn" id="dGo">✨ חשב</button></div>
+    ${fav.length?`<h2 style="margin-top:16px;font-size:1rem">⭐ הקבועים שלך <span class="mut">(לחיצה מוסיפה)</span></h2>
+      <div class="chips" id="dFav">${fav.map((o,i)=>`<button data-i="${i}">${esc(o.name)} <span class="mut">${r0(o.kcal*o.unit/100)}</span></button>`).join('')}</div>`:''}
+    ${prev.length?`<h2 style="margin-top:16px;font-size:1rem">🔁 ארוחות קודמות <span class="mut">(לחיצה = שוב)</span></h2>
+      ${prev.map((e,i)=>{const t=totals([e]);return `<div class="it" data-p="${i}" style="cursor:pointer">${e.img?`<img src="${e.img}" alt="">`:'<div class="ph">🍽️</div>'}
+        <div class="nm"><b>${esc(e.items.map(x=>x.name).join(', '))}</b><span class="mut">${e.meal}</span></div><div class="kc">${r0(t.kcal)}</div></div>`}).join('')}`:''}`;
   open('#shAdd');
+  if($('#dFav'))$('#dFav').onclick=ev=>{const b=ev.target.closest('button');if(!b)return;const o=fav[+b.dataset.i],d=$('#desc');
+    d.value=(d.value.trim()?d.value.trim().replace(/[,،]\s*$/,'')+', ':'')+o.name;b.classList.add('on')};
+  $('#addPn').querySelectorAll('[data-p]').forEach(el=>el.onclick=()=>{const e=JSON.parse(JSON.stringify(prev[+el.dataset.p]));
+    delete e.time;delete e.id;e.meal=mealNow();e.items.forEach(x=>{x.done=1});openReview(e,-1)});
   $('#dMan').onclick=()=>openReview({meal:mealNow(),items:[{name:'',grams:100,kcal:0,protein:0,carbs:0,fat:0}]},-1);
   $('#dGo').onclick=()=>{const t=$('#desc').value.trim();if(!t){$('#desc').focus();return}
     const lc=localCalc(t);
-    if(lc.items.length&&!lc.unknown.length){lc.items.forEach(x=>x.base={...x});openReview({meal:mealNow(),items:lc.items},-1);toast('חושב מהמאגר ✓');return}
+    if(lc.items.length&&!lc.unknown.length){lc.items.forEach(x=>x.base={...x});openReview({meal:mealNow(),items:lc.items},-1);toast(lc.items.every(x=>x.my)?'חושב מהמאגר שלך ✓':'חושב מהמאגר ✓');return}
     run({text:t,local:lc})};
 };
 async function run({img,thumb,text,local}){
@@ -756,6 +784,7 @@ function drawReview(){
     if(!e.items.length){toast('אין מה לשמור');return}
     if(curIdx<0){e.time=new Date().toTimeString().slice(0,5);e.id=Date.now();(DB[day]=DB[day]||[]).push(e)}
     else DB[day][curIdx]=e;
+    e.items.forEach(learn);saveMy();
     save();close('#shAdd');render();toast('נשמר ✓');
   };
 }
@@ -784,10 +813,11 @@ function openSet(){
     <div class="row" style="margin-top:16px"><button class="btn sec" id="sC">ביטול</button><button class="btn" id="sOk">שמור</button></div>
     <button class="btn sec" id="sFit" style="width:100%;margin-top:8px">⌚ חיבור לאפליקציית הבריאות</button>
     <h2 style="margin-top:22px">גיבוי</h2>
+    <button class="btn sec" id="sMy" style="width:100%;margin-bottom:8px">⭐ המאגר שלי (${Object.keys(MY).length} מאכלים)</button>
     <div class="row"><button class="btn sec" id="sCsv">📄 טבלה (CSV)</button><button class="btn sec" id="sBak">💾 גיבוי</button></div>
     <button class="btn sec" id="sRes" style="width:100%;margin-top:8px">📥 שחזר מגיבוי</button>
     <input type="file" id="resF" accept=".json,application/json" hidden>
-    <p class="note" style="text-align:center;margin-top:16px">גרסה 9</p>`;
+    <p class="note" style="text-align:center;margin-top:16px">גרסה 10</p>`;
   open('#shSet');
   $('#sC').onclick=()=>close('#shSet');
   $('#sSex').onclick=ev=>{const b=ev.target.closest('button');if(!b)return;$('#sSex').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z===b))};
@@ -797,12 +827,26 @@ function openSet(){
     S.prof={sex:$('#sSex .on').dataset.s,age:+$('#pA').value||0,h:+$('#pH').value||0,w:num($('#pW').value)||0};
     LS.set('kal-set',S);localStorage.removeItem('kal-models2');close('#shSet');render();toast('נשמר ✓')};
   $('#sCsv').onclick=exportCsv;
-  $('#sBak').onclick=()=>download('kalori-backup-'+dk(new Date())+'.json',JSON.stringify({v:2,goal:S.goal,prof:S.prof,db:DB,fit:FIT}),'application/json');
+  $('#sMy').onclick=()=>{close('#shSet');openMy()};
+  $('#sBak').onclick=()=>download('kalori-backup-'+dk(new Date())+'.json',JSON.stringify({v:3,goal:S.goal,prof:S.prof,db:DB,fit:FIT,my:MY}),'application/json');
   $('#sRes').onclick=()=>{$('#resF').value='';$('#resF').click()};
   $('#resF').onchange=async ev=>{const f=ev.target.files[0];if(!f)return;
     try{const o=JSON.parse(await f.text());if(!o.db)throw 0;if(!confirm('לשחזר? זה יחליף את מה שיש עכשיו.'))return;
-      DB=o.db;if(o.goal)S.goal=o.goal;if(o.prof)S.prof=o.prof;if(o.fit){FIT=o.fit;LS.set('kal-fit',FIT)}LS.set('kal-set',S);save();close('#shSet');render();toast('שוחזר ✓')}
+      DB=o.db;if(o.goal)S.goal=o.goal;if(o.prof)S.prof=o.prof;if(o.fit){FIT=o.fit;LS.set('kal-fit',FIT)}if(o.my){MY=o.my;saveMy()}LS.set('kal-set',S);save();close('#shSet');render();toast('שוחזר ✓')}
     catch(e){toast('קובץ גיבוי לא תקין')}};
+}
+function openMy(){
+  const list=Object.entries(MY).sort((a,b)=>b[1].n-a[1].n||a[1].name.localeCompare(b[1].name));
+  $('#histPn').innerHTML=`<h2>⭐ המאגר שלי</h2>
+    <p class="note">כל מה שאתה שומר נזכר כאן. בפעם הבאה שתכתוב את אותו שם — החישוב מיידי, בלי גוגל. כדי לתקן ערכים: פשוט ערוך ושמור את המאכל ביומן.</p>
+    ${list.length?`<table class="h"><tr><th>מאכל</th><th>מנה</th><th>קל׳</th><th>פעמים</th><th></th></tr>
+    ${list.map(([k,o])=>`<tr><td>${esc(o.name)}</td><td>${o.unit} ג׳</td><td>${r0(o.kcal*o.unit/100)}</td><td>${o.n}</td>
+      <td><button class="x" data-k="${esc(k)}" style="border:0;background:none;color:var(--warn);font-size:1.1rem">✕</button></td></tr>`).join('')}</table>`
+      :'<div class="empty">עוד ריק. כל מאכל שתשמור ייכנס לכאן.</div>'}
+    <button class="btn" id="myC" style="width:100%;margin-top:14px">סגור</button>`;
+  open('#shHist');
+  $('#myC').onclick=()=>close('#shHist');
+  $('#histPn').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{delete MY[b.dataset.k];saveMy();openMy()});
 }
 function download(name,text,type){
   const blob=new Blob([text],{type});const f=new File([blob],name,{type});
