@@ -232,6 +232,35 @@ h3.sub{display:flex;align-items:center;gap:6px}
 .conf{position:fixed;inset:0;pointer-events:none;z-index:30;overflow:hidden}
 .conf i{position:absolute;top:-12px;width:8px;height:12px;border-radius:2px;animation:cf 2.2s ease-in forwards}
 @keyframes cf{to{top:105%;transform:rotate(540deg) translateX(40px)}}
+.hero .macros{display:grid;grid-template-columns:1fr;gap:9px;margin-top:16px}
+.hero .mac{display:grid;grid-template-columns:70px 1fr 70px;align-items:center;gap:10px}
+.hero .mac .tr{margin:0}.hero .mac .v{text-align:left;font-size:.82rem}.hero .mac .n{font-size:.86rem;color:var(--ink)}
+.hdef{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.hdef .t1{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--mut);font-size:.92rem}
+.hdef .t1 b{color:var(--ink);font-weight:600}
+.hdef .t2{text-align:center;font-size:.76rem;color:var(--mut);margin-top:2px}
+.hdef.bad .t1 b,.hdef.bad .t2{color:#dc6803}
+.ib3{width:32px;height:32px;border-radius:10px;border:0;background:var(--soft);color:var(--mut);display:grid;place-items:center;flex:none}
+.road{display:flex;align-items:center;gap:12px;width:100%;margin-top:12px;padding:10px 12px;border:0;border-radius:16px;background:var(--soft);text-align:right}
+.road .rimg{width:40px;height:40px;object-fit:contain;flex:none}
+.road .rt{flex:1;min-width:0}.road .r1{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.road .r1 b{font-size:1rem;white-space:nowrap}.road .r1 .pill{padding:5px 10px;font-size:.78rem}.road .r3{font-size:.76rem;color:var(--mut);margin-top:5px}
+.road .tr{height:7px;border-radius:7px;background:var(--line);overflow:hidden;margin-top:7px}
+.road .fi{height:100%;border-radius:7px;background:linear-gradient(90deg,#32d583,#027a48)}
+.chrow{display:flex;gap:8px;margin-top:12px}
+.chip2{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:7px;border:0;border-radius:14px;padding:11px 10px;background:var(--card);box-shadow:var(--sh);font-size:.84rem;color:var(--mut)}
+.chip2 b{color:var(--ink)}.chip2 .svg{color:var(--accd);flex:none}.chip2.bad b,.chip2.bad .svg{color:var(--warn)}.chip2.ok .svg{color:var(--accd)}
+.mi.im{background:var(--mb);padding:3px}.mi.im img{width:100%;height:100%;object-fit:contain;display:block}
+@media (prefers-color-scheme:dark){.mi.im{background:rgba(255,255,255,.06)}}
+.meal .kp{font-size:.85rem;font-weight:600;color:var(--accd);background:var(--acc2);border-radius:999px;padding:3px 10px}
+.meal.emp{padding:10px 16px}.meal.emp .mh{padding:0}.meal .mh .k{font-size:.8rem}
+.meal .mh h3{font-weight:600}
+.woC.emp{padding:10px 16px}.woC.emp .wh{padding:0}
+.onb .hero2.img{background:none;width:150px;height:150px;border-radius:0}.onb .hero2.img img{width:100%;height:100%;object-fit:contain}
+.tile .ti{padding:4px}.tile .ti img{width:100%;height:100%;object-fit:contain}
+.tipimg{width:26px;height:26px;object-fit:contain;flex:none}
+.cih{text-align:center}.cih img{width:64px;height:64px;object-fit:contain}
+@media (prefers-color-scheme:dark){#ringC{filter:drop-shadow(0 0 7px rgba(50,213,131,.55))}}
 /* add sheet */
 .srch{position:relative;margin-top:6px}
 .srch input{padding-right:42px}
@@ -301,6 +330,8 @@ h3.sub{display:flex;align-items:center;gap:6px}
       <div class="stat"><b id="sGoal">0</b><span>יעד</span></div>
     </div>
     <div class="macros" id="bars"></div>
+    <div id="heroDef"></div>
+    <div id="road"></div>
   </div>
   <div id="wl"></div>
   <div id="burn"></div>
@@ -382,15 +413,15 @@ function renderBurn(t){
   if(base!=null){
     const el=$('#burn'),today=day===dk(new Date()),hr=new Date().getHours(),fin=!today||hr>=20,wk=woExtra(day),bu=burnOf(day);
     const df=fin?base+wk-t.kcal:base+wk-S.goal.kcal,hot=fin&&(df>1000||(t.kcal>0&&t.kcal<minKcal()*.8)),over=df<0;
-    el.innerHTML=`<div class="card burnC"><div class="ic ${hot?'wr':over?'wr':'fl'}">${ic(hot||over?'warn':'flame',24)}</div>
-      <div class="tx"><span class="mut">${fin?(over?'עודף היום':'גירעון היום'):'גירעון צפוי אם תעמוד ביעד'}</span>
-        <b class="${hot||over?'bad':'neu'}">≈ ${r0(Math.abs(df)).toLocaleString()} קל׳</b>
-        <span class="mut">הגוף שורף ≈ ${r0(base).toLocaleString()} ביום${wk?` + אימונים ${r0(wk)}`:''}${bu&&(bu.t||bu.total)?` · השעון: ${r0(bu.tot).toLocaleString()}${today?' עד עכשיו':''}`:''}</span>
-        ${hot?`<span class="mut" style="color:var(--warn)">${df>1000?'מעל ½-1 ק״ג בשבוע — מהר מדי לירידה מבוקרת':'אכלת מעט מאוד היום'}</span>`:''}</div>
-      <div class="bt">${today?`<button class="pill g" id="bSync">${ic('watch',17)} ${HK||S.scReady?'סנכרן':'חבר'}</button>`:''}<button class="pill ib2" id="bFitMan" aria-label="הזן שריפה ידנית">${ic('pencil',17)}</button></div></div>`;
-    renderWoCard(el);return;
+    $('#heroDef').innerHTML=`<div class="hdef ${hot||over?'bad':''}">
+        <div class="t1"><span>${fin?(over?'עודף היום':'גירעון היום'):'גירעון צפוי'}</span><b>≈ ${r0(Math.abs(df)).toLocaleString()} קל׳</b>
+          ${today?`<button class="ib3" id="bSync" aria-label="סנכרן שריפה מהשעון">${ic('watch',18)}</button>`:''}<button class="ib3" id="bFitMan" aria-label="הזן שריפה ידנית">${ic('pencil',17)}</button></div>
+        <div class="t2">${hot?(df>1000?'מהר מדי לירידה מבוקרת — כדאי לאכול קצת יותר':'אכלת מעט מאוד היום'):`הגוף שורף ≈ ${r0(base).toLocaleString()}${wk?` + אימונים ${r0(wk)}`:''}${bu&&(bu.t||bu.total)?` · השעון ${r0(bu.tot).toLocaleString()}`:''}`}</div></div>`;
+    el.innerHTML='';renderWoCard(el);
+    if($('#bSync'))$('#bSync').onclick=syncFit;$('#bFitMan').onclick=()=>openFitSheet(false);
+    return;
   }
-  renderBurnOld(t);
+  $('#heroDef').innerHTML='';renderBurnOld(t);
 }
 function renderBurnOld(t){
   const el=$('#burn'),bu=burnOf(day),today=day===dk(new Date());
@@ -409,9 +440,9 @@ function renderBurnOld(t){
 }
 function renderWoCard(el){
   const ws=WO[day]||[];
-  el.innerHTML+=`<div class="card woC"><div class="wh"><span class="mi" style="--mb:#fef0c7;--mf:#dc6803">${ic('run',20)}</span><b>אימונים</b>
+  el.innerHTML+=`<div class="card woC ${ws.length?'':'emp'}"><div class="wh"><span class="mi im" style="--mb:#dcfae6">${art('i_shoe','')}</span><b>אימונים</b>
     <span class="k">${ws.length?r0(woKcal(day))+' קל׳':''}</span><button class="add" id="bWo" aria-label="הוסף אימון">${ic('plus',18,2.4)}</button></div>
-    ${ws.length?ws.map((w,i)=>`<div class="wr2" data-wo="${i}"><span>${esc(w.type)}${w.min?` · ${w.min} דק׳`:''}${w.extra===false?' <small class="mut">(נמדד בשעון)</small>':''}</span><b>${r0(w.kcal)}</b></div>`).join(''):'<div class="none">אימון שהשעון לא מדד? הוסף אותו כאן</div>'}</div>`;
+    ${ws.length?ws.map((w,i)=>`<div class="wr2" data-wo="${i}"><span>${esc(w.type)}${w.min?` · ${w.min} דק׳`:''}${w.extra===false?' <small class="mut">(נמדד בשעון)</small>':''}</span><b>${r0(w.kcal)}</b></div>`).join(''):''}</div>`;
   if($('#bSync'))$('#bSync').onclick=syncFit;
   $('#bFitMan').onclick=()=>openFitSheet(false);
   $('#bWo').onclick=()=>openWorkout(-1);
@@ -618,7 +649,9 @@ const IC={
 function ic(n,sz=22,sw=1.9){return `<svg class="svg" width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||''}</svg>`}
 // meal look: icon + its own colour pair
 const MIC={'בוקר':['coffee','#fef0c7','#dc6803'],'צהריים':['salad','#dcfae6','#079455'],'ערב':['dinner','#e0eaff','#444ce7'],'נשנוש':['apple','#fee4e2','#d92d20']};
-function mealIc(m,sz=22){const [n,bg,fg]=MIC[m];return `<span class="mi" style="--mb:${bg};--mf:${fg}">${ic(n,sz)}</span>`}
+const MIMG={'בוקר':'breakfast','צהריים':'lunch','ערב':'dinner','נשנוש':'snack'};
+function mealIc(m,sz=22){const [n,bg,fg]=MIC[m];return `<span class="mi im" style="--mb:${bg};--mf:${fg}"><img src="art/i_${MIMG[m]}.webp" alt=""></span>`}
+const art=(n,cls)=>`<img class="${cls||'ai2'}" src="art/${n}.webp" alt="">`;
 /* ---------- main render ---------- */
 
 let weekOff=0;
@@ -666,12 +699,11 @@ function render(){
   for(const m of MEALS){
     const es=list.map((e,i)=>[e,i]).filter(([e])=>e.meal===m);
     const mt=totals(es.map(x=>x[0]));
-    h+=`<div class="card meal"><div class="mh">${mealIc(m)}<h3>${m}</h3><span class="k">${es.length?r0(mt.kcal)+' קל׳':''}</span>
+    h+=`<div class="card meal ${es.length?'':'emp'}"><div class="mh">${mealIc(m)}<h3>${m}</h3>${es.length?`<span class="kp">${r0(mt.kcal)}</span>`:'<span class="k">עוד לא נרשם</span>'}
       <button class="add" data-m="${m}" aria-label="הוסף ל${m}">${ic('plus',18,2.4)}</button></div>`;
-    if(!es.length)h+=`<div class="none">עוד לא נרשם</div>`;
     for(const [e,i] of es){
       const et=totals([e]);
-      h+=`<div class="it" data-i="${i}">${e.img?`<img src="${e.img}" alt="">`:`<div class="ph">${mealIc(m,20)}</div>`}
+      h+=`<div class="it" data-i="${i}">${e.img?`<img src="${e.img}" alt="">`:''}
         <div class="nm"><b>${esc(e.items.map(x=>x.name).join(', ')||'ארוחה')}</b>
         <span class="mut">ח ${r0(et.protein)} · פ ${r0(et.carbs)} · ש ${r0(et.fat)}${e.time?' · '+e.time:''}</span></div>
         <div class="kc">${r0(et.kcal)}<small> קל׳</small></div></div>`;
@@ -1193,7 +1225,7 @@ function drawRes(q,fav,prev){
   if(!q){
     list=fav.map(o=>({names:[o.name],kcal:o.kcal,protein:o.protein,carbs:o.carbs,fat:o.fat,unit:o.unit,my:1}));
     el.innerHTML=`<div class="tiles">
-      <button class="tile" id="tCam"><i style="--tb:#dcfae6;--tf:#079455">${ic('camera')}</i><b>צלם את הצלחת</b><span>AI מזהה ומחשב</span></button>
+      <button class="tile" id="tCam"><i style="--tb:#dcfae6;--tf:#079455" class="ti">${art('i_scanfood','')}</i><b>צלם את הצלחת</b><span>AI מזהה ומחשב</span></button>
       <button class="tile" id="tRead"><i style="--tb:#e0f2fe;--tf:#0086c9">${ic('scan')}</i><b>מצילום מסך</b><span>קורא ערכים בלי AI</span></button>
       <button class="tile" id="tDesc"><i style="--tb:#f4ebff;--tf:#7f56d9">${ic('chat')}</i><b>תאר ארוחה</b><span>"2 ביצים ופרוסת לחם"</span></button>
       <button class="tile" id="tMan"><i style="--tb:#fef0c7;--tf:#dc6803">${ic('pencil')}</i><b>הזנה ידנית</b><span>אתה כותב את הערכים</span></button>
@@ -1409,7 +1441,7 @@ function openSet(){
       <button class="li" id="sRes"><i>${ic('restore')}</i><div class="t">שחזור מגיבוי<span>מתמזג עם מה שיש, לא מוחק כלום</span></div></button>
     </div>
     <input type="file" id="resF" accept=".json,application/json" hidden>
-    <p class="note" style="text-align:center;margin-top:16px">גרסה 23</p>`;
+    <p class="note" style="text-align:center;margin-top:16px">גרסה 24</p>`;
   open('#shSet');
   $('#sPlan').onclick=()=>{close('#shSet');openPlan()};
   $('#sProf').onclick=()=>{close('#shSet');openOnb(1)};
@@ -1463,30 +1495,30 @@ function drawOnb(st){
   const foot=(next,back,skip)=>`<div class="grow"></div>${skip?`<button class="btn sec w" id="oSkip" style="margin-top:8px">${skip}</button>`:''}
     <div class="row" style="margin-top:10px">${back?'<button class="btn sec" id="oBack">חזרה</button>':''}<button class="btn" id="oNext">${next}</button></div>`;
   let h='';
-  if(st===0)h=`<div class="hero2" style="--hb:#dcfae6;--hf:#079455">${ic('bowl',46,1.6)}</div><h1>ברוכים הבאים</h1><p class="lead">צלם, כתוב או חפש מה אכלת — ונעקוב יחד אחרי הקלוריות, החלבון והגירעון היומי.</p>
+  if(st===0)h=`<div class="hero2 img">${art('o_welcome','')}</div><h1>ברוכים הבאים</h1><p class="lead">צלם, כתוב או חפש מה אכלת — ונעקוב יחד אחרי הקלוריות, החלבון והגירעון היומי.</p>
     <label class="f">איך לקרוא לך?<input class="i" id="oName" value="${esc(OB.name)}" placeholder="השם שלך" autocomplete="given-name"></label>
     ${S.onb?'':`<button class="btn sec w" id="oRes" style="margin-top:12px">${ic('restore',18)} יש לי גיבוי — שחזר את הנתונים</button><input type="file" id="oResF" accept=".json,application/json" hidden>`}${foot('בואו נתחיל',0,S.onb?'סגור':'')}`;
-  if(st===1)h=`<div class="hero2" style="--hb:#e0f2fe;--hf:#0086c9">${ic('ruler',46,1.6)}</div><h1>קצת עליך</h1><p class="lead">כדי לחשב כמה קלוריות הגוף שורף ביום.</p>
+  if(st===1)h=`<div class="hero2 img">${art('o_body','')}</div><h1>קצת עליך</h1><p class="lead">כדי לחשב כמה קלוריות הגוף שורף ביום.</p>
     <div class="sel" id="oSex"><button data-s="f" class="${OB.sex==='f'?'on':''}">אישה</button><button data-s="m" class="${OB.sex!=='f'?'on':''}">גבר</button></div>
     <div class="g4" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-top:12px">
       <div><label>גיל</label><input class="i" type="number" inputmode="numeric" id="oA" value="${OB.age}"></div>
       <div><label>גובה (ס״מ)</label><input class="i" type="number" inputmode="numeric" id="oH" value="${OB.h}"></div>
       <div><label>משקל (ק״ג)</label><input class="i" type="number" inputmode="decimal" id="oW" value="${OB.w}"></div></div>
     <div class="err" id="oErr" style="display:none">מלא גיל, גובה ומשקל</div>${foot('המשך',1)}`;
-  if(st===2)h=`<div class="hero2" style="--hb:#fef0c7;--hf:#dc6803">${ic('run',46,1.6)}</div><h1>כמה אתה זז?</h1><p class="lead">ביום רגיל, כולל אימונים.</p>
+  if(st===2)h=`<div class="hero2 img">${art('o_activity','')}</div><h1>כמה אתה זז?</h1><p class="lead">ביום רגיל, כולל אימונים.</p>
     <div class="opt" id="oAct">${ACT.map(a=>`<button data-v="${a[0]}" class="${a[0]==OB.act?'on':''}"><div><b>${a[1]}</b><span>${a[2]}</span></div></button>`).join('')}</div>
     <h3 class="sub">המטרה שלך</h3>
     <div class="opt" id="oGoal">${GOALS.map(gl=>`<button data-v="${gl[0]}" class="${gl[0]===OB.goal?'on':''}"><div><b>${gl[1]}</b>${gl[2]?`<span>${gl[2]}</span>`:''}</div></button>`).join('')}</div>${foot('חשב לי יעד',1)}`;
   if(st===3){const c=calcGoal(OB);OB.calc=c;
     const minW=Math.ceil(18.5*(OB.h/100)**2),mr=Math.round(OB.w*.01*4)/4;OB.target=OB.target||Math.max(minW,Math.round(OB.w-5));OB.rate=Math.min(OB.rate||.5,mr);
-    h=`<div class="hero2" style="--hb:#fee4e2;--hf:#d92d20">${ic('target',46,1.6)}</div><h1>היעד היומי שלך</h1><p class="lead">הגוף שלך שורף בערך ${c.tdee.toLocaleString()} קל׳ ביום.</p>
+    h=`<div class="hero2 img">${art('o_goal','')}</div><h1>היעד היומי שלך</h1><p class="lead">הגוף שלך שורף בערך ${c.tdee.toLocaleString()} קל׳ ביום.</p>
     ${OB.goal==='lose'?`<div class="g2"><label class="f" style="margin:0">משקל יעד (ק״ג)<input class="i" id="oT" type="number" inputmode="decimal" value="${OB.target}"></label>
       <div><div class="f" style="margin:0">קצב בשבוע</div><div class="sel" id="oR">${[.25,.5,.75,1].filter(v=>v<=mr+.01).map(v=>`<button data-v="${v}" class="${v==OB.rate?'on':''}">${v===.25?'¼':v===.5?'½':v===.75?'¾':'1'}</button>`).join('')}</div></div></div>
       <div class="note" id="oTn" style="text-align:center;margin-bottom:8px">${OB.target<OB.w?`≈ ${Math.round((OB.w-OB.target)/OB.rate)} שבועות`:''}${OB.target<minW?` · <span style="color:var(--warn)">מתחת למשקל התקין לגובה (${minW})</span>`:''}</div>`:''}
     <div class="goalbox"><div class="big2">${c.kcal.toLocaleString()}</div><div class="mut">קלוריות ביום</div>
       <div class="macros" style="margin-top:14px">${[['חלבון',c.protein,'var(--pr)'],['פחמימות',c.carbs,'var(--cb)'],['שומן',c.fat,'var(--ft)']].map(([n,v,col])=>`<div class="mac"><div class="n">${n}</div><div class="tr"><div class="fi" style="width:100%;background:${col}"></div></div><div class="v">${v} ג׳</div></div>`).join('')}</div></div>
     <p class="note" style="text-align:center">אפשר לשנות בכל רגע בהגדרות. זו הערכה לפי נוסחה מקובלת (Mifflin-St Jeor), לא ייעוץ רפואי.</p>${foot('מעולה, המשך',1)}`}
-  if(st===4)h=`<div class="hero2" style="--hb:#f4ebff;--hf:#7f56d9">${ic('sparkle',46,1.6)}</div><h1>צילום עם AI</h1><p class="lead">לא חובה. רוב המאכלים מחושבים בטלפון. AI צריך רק כדי לזהות צלחת מתמונה ומאכלים חדשים.</p>
+  if(st===4)h=`<div class="hero2 img">${art('o_ai','')}</div><h1>צילום עם AI</h1><p class="lead">לא חובה. רוב המאכלים מחושבים בטלפון. AI צריך רק כדי לזהות צלחת מתמונה ומאכלים חדשים.</p>
     <ol class="sc"><li>היכנס ל-<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a></li><li>לחץ <b>Create API key</b> והעתק</li><li>הדבק כאן:</li></ol>
     <input class="i" id="oKey" type="password" value="${esc(OB.key)}" placeholder="מפתח Gemini (חינם)" autocomplete="off" spellcheck="false" dir="ltr">${foot('סיום ✓',1,'דלג — אוסיף אחר כך')}`;
   $('#onbPn').innerHTML=`<div class="onb">${dots}${h}</div>`;
@@ -1651,31 +1683,37 @@ function confetti(){const c=document.createElement('div');c.className='conf';
 
 /* ---------- home: weight strip, weekly budget, protein, safety ---------- */
 function renderWL(t){
-  const el=$('#wl');if(!el)return;const today=dk(new Date()),isToday=day===today;let h='';
-  const lw=lastWeigh(),cw=curWeight(),r=actualRate();
-  if(isToday&&(S.plan||lw)){
-    const weighed=lw&&lw.d===today;
-    h+=`<button class="card wq" id="wqBtn"><span class="mi" style="--mb:#e0f2fe;--mf:#0086c9">${ic('scale',22)}</span>
-      <span class="tx">${weighed?`<b>${kg(lw.w)} ק״ג היום</b><span>מגמה ${kg(cw)}${r!=null?` · ${r>=0?'↓':'↑'} ${Math.abs(r).toFixed(2)} ק״ג בשבוע`:''}</span>`
-        :`<b>${new Date().getHours()<12?'שקילת בוקר?':'עוד לא נשקלת היום'}</b><span>${lw?`אחרונה: ${kg(lw.w)} (${fmtD(lw.d)}) · מגמה ${kg(cw)}`:'שקילה אחת ביום, באותה שעה'}</span>`}</span>
-      <span class="add">${ic(weighed?'pencil':'plus',18,2.4)}</span></button>`;
+  const el=$('#wl'),rd=$('#road');if(!el)return;const today=dk(new Date()),isToday=day===today;let h='',rh='';
+  const lw=lastWeigh(),cw=curWeight(),pl=S.plan,e=eta(),weighed=lw&&lw.d===today;
+  if(isToday&&(pl||lw)){
+    const pr=pl&&pl.start&&cw?Math.max(0,Math.min(1,(pl.start.w-cw)/(pl.start.w-pl.target))):null;
+    rh=`<button class="road" id="wqBtn" aria-label="שקילה והדרך ליעד">${art('i_scale','rimg')}
+      <div class="rt"><div class="r1"><b><bdi>${kg(cw)}</bdi>${pl?` ← <bdi>${pl.target}</bdi>`:''} ק״ג</b>
+        ${weighed?'':`<span class="pill g">${ic('plus',14,2.6)} ${new Date().getHours()<12?'שקילת בוקר':'שקילה'}</span>`}</div>
+        ${pr!=null?`<div class="tr"><div class="fi" style="width:${pr*100}%"></div></div>`:''}
+        <div class="r3">${weighed?`נשקלת היום: ${kg(lw.w)}`:'מגמה'}${e&&!e.done?` · יעד בערך ב-${fmtD(e.d,{day:'numeric',month:'long'})}`:e&&e.done?' · הגעת ליעד! 🎉':''}</div></div></button>`;
   }
+  rd.innerHTML=rh;
   if(isToday){
-    const b=weekBudget(),t2=totals(DB[today]);
-    h+=`<div class="card wk2"><div class="r1"><span class="mut">התקציב השבועי</span><b class="${b.left<0?'bad':''}">${b.left<0?'חריגה של ':'נשארו '}${Math.abs(r0(b.left)).toLocaleString()} קל׳</b></div>
-      <div class="tr"><div class="fi" style="width:${Math.min(100,b.eaten/b.total*100)}%;${b.left<0?'background:var(--warn)':''}"></div></div>
-      <div class="mut">${b.daysLeft>1?`עוד ${b.daysLeft} ימים כולל היום · בממוצע ${Math.max(0,b.perDay).toLocaleString()} ליום`:'היום האחרון של השבוע'}</div></div>`;
-    const pl=S.goal.protein-t2.protein;
-    if(pl>15&&t2.kcal>0){const ids=proteinIdeas();
-      h+=`<div class="card pq"><div class="r1">${ic('target',18)}<b>נשארו לך ${r0(pl)} ג׳ חלבון היום</b></div>
-        <div class="chips">${ids.map((x,i)=>`<button data-pi="${i}">${esc(x.f.names[0])} <span class="mut">+${r0(x.p)} ג׳</span></button>`).join('')}</div></div>`;
-      setTimeout(()=>{document.querySelectorAll('[data-pi]').forEach(b=>b.onclick=()=>{const f=ids[+b.dataset.pi].f;openAdd(null);const q=$('#aQ');q.value=f.names[0];q.oninput()})},0);
-    }
+    const b=weekBudget(),t2=totals(DB[today]),pg=S.goal.protein-t2.protein;
+    h+=`<div class="chrow"><button class="chip2 ${b.left<0?'bad':''}" id="cBud">${ic('table',17)}<span>${b.left<0?'חריגה ':'נשארו '}<b>${Math.abs(r0(b.left)).toLocaleString()}</b> השבוע</span></button>
+      ${pg>15&&t2.kcal>0?`<button class="chip2" id="cPro">${ic('target',17)}<span>חסרים <b>${r0(pg)}</b> ג׳ חלבון</span></button>`
+        :t2.kcal>0?`<button class="chip2 ok" id="cPro">${ic('check',17)}<span>חלבון בכיוון</span></button>`:''}</div>`;
     const hr=new Date().getHours();
     if(hr>=20&&t2.kcal>0&&t2.kcal<minKcal()*.7)h+=`<div class="card warnC">${ic('warn',20)}<span>אכלת היום רק ${r0(t2.kcal)} קל׳. ירידה מהירה מדי פוגעת בשריר ובאנרגיה — כדאי ארוחה קטנה עם חלבון.</span></div>`;
   }
   el.innerHTML=h;
   if($('#wqBtn'))$('#wqBtn').onclick=()=>openWeigh();
+  if($('#cBud'))$('#cBud').onclick=()=>{const b=weekBudget();toast(b.daysLeft>1?`תקציב השבוע: עוד ${b.daysLeft} ימים · בממוצע ${Math.max(0,b.perDay).toLocaleString()} ליום`:'היום האחרון של השבוע')};
+  if($('#cPro'))$('#cPro').onclick=openProtein;
+}
+function openProtein(){
+  const ids=proteinIdeas(),t2=totals(DB[dk(new Date())]),pg=Math.max(0,S.goal.protein-t2.protein);
+  $('#addPn').innerHTML=`<h2>חלבון</h2><p class="note">${pg>0?`חסרים לך היום ${r0(pg)} ג׳. חלבון שומר על השריר בזמן ירידה ומשביע לאורך זמן.`:'הגעת ליעד החלבון של היום 💪'}</p>
+    ${ids.map((x,i)=>`<div class="fr"><div class="nm"><b>${esc(x.f.names[0])}${x.f.my?'<span class="star">שלי</span>':''}</b><span>מנה ${x.f.unit} ג׳ · ${r0(x.p)} ג׳ חלבון · ${r0(x.k)} קל׳</span></div>
+      <button class="add" data-pq="${i}" aria-label="הוסף ${esc(x.f.names[0])}">${ic('plus',18,2.4)}</button></div>`).join('')}`;
+  open('#shAdd');
+  $('#addPn').querySelectorAll('[data-pq]').forEach(b=>b.onclick=()=>{const f=ids[+b.dataset.pq].f;quickSave([itemOf(f,f.unit)],b.closest('.fr'))});
 }
 
 /* ---------- weigh-in sheet (typed or from Apple Health via a shortcut) ---------- */
@@ -1778,7 +1816,7 @@ function openCheckin(r,ws){
   let newK=t&&Math.abs(t.kcal-g.kcal)>=50?t.kcal:null;
   if(fast)newK=Math.max(newK||0,g.kcal+150);   // too fast → never suggest eating less
   if(newK!=null&&newK===g.kcal)newK=null;
-  $('#addPn').innerHTML=`<h2>הסיכום השבועי</h2><p class="mut" style="margin-top:-4px">${fmtD(r.ws)}–${fmtD(r.we)}</p>
+  $('#addPn').innerHTML=`<div class="cih">${art('i_calendar','')}</div><h2>הסיכום השבועי</h2><p class="mut" style="margin-top:-4px">${fmtD(r.ws)}–${fmtD(r.we)}</p>
     <div class="sgrid">
       <div><b>${r.dW==null?'–':(r.dW<=0?'↓ ':'↑ ')+Math.abs(r.dW).toFixed(2)}</b><span>ק״ג (מגמה)</span></div>
       <div><b>${r0(r.avgK).toLocaleString()}</b><span>קל׳ ממוצע ליום</span></div>
@@ -1828,7 +1866,7 @@ function openProg(){
       <button class="pill" id="pgPlan">${ic('pencil',16)} ערוך</button></div>
       <div class="tr big"><div class="fi" style="width:${pr*100}%"></div></div>
       <div class="r2"><span>התחלה ${kg(pl.start&&pl.start.w)}</span><span><b>${cw&&pl.start?kg(pl.start.w-cw):'–'}</b> ירדו · <b>${cw?kg(Math.max(0,cw-pl.target)):'–'}</b> נשארו</span></div>
-      ${e?e.done?'<div class="tip">'+ic('star',18)+'<span>הגעת ליעד! 🎉 אפשר להגדיר יעד חדש או לעבור לשמירה.</span></div>'
+      ${e?e.done?'<div class="tip">'+art('i_trophy','tipimg')+'<span>הגעת ליעד! 🎉 אפשר להגדיר יעד חדש או לעבור לשמירה.</span></div>'
         :`<div class="tip">${ic('target',18)}<span>בקצב ${e.real?'הנוכחי שלך':'המתוכנן'} (${e.rate.toFixed(2)} ק״ג בשבוע) תגיע ליעד בערך ב-<b>${fmtD(e.d,{day:'numeric',month:'long',year:'numeric'})}</b></span></div>`:''}
       </div>`
       :`<button class="card setup" id="pgPlan"><span class="mi" style="--mb:#fff;--mf:#039855;width:48px;height:48px">${ic('target',26)}</span><span><b style="display:block">הגדר יעד ירידה</b><span style="font-size:.85rem">משקל יעד + קצב → יעד קלוריות ותאריך משוער</span></span></button>`}
