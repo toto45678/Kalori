@@ -330,7 +330,7 @@ const MEALS=['בוקר','צהריים','ערב','נשנוש'];
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}};
 let S=LS.get('kal-set',{key:'',goal:{kcal:2000,protein:120,carbs:220,fat:65}});
-S.prof=S.prof||{sex:'m',age:0,h:0,w:0};S.sc=S.sc||'קלוריות כושר';
+S.prof=S.prof||{sex:'m',age:0,h:0,w:0};S.goal=S.goal||{kcal:2000,protein:120,carbs:220,fat:65};S.sc=S.sc||'קלוריות כושר';
 let DB=LS.get('kal-db',{});            // {'2026-11-23':[entry,...]}
 let WO=LS.get('kal-wo',{});         // {'2026-11-25':[{type,min,lvl,kcal,src,time}]} workouts typed by hand
 let FIT=LS.get('kal-fit',{});          // {'2026-11-23':{act,rest,t}}  burned kcal from Apple Health (via Shortcuts) or typed
