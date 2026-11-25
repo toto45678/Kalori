@@ -1,1 +1,4 @@
 node_modules/
+app/www/
+app/ios/
+app/node_modules/

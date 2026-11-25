@@ -1,0 +1,20 @@
+{
+  "name": "kalori",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Kalori - native iPhone wrapper (Capacitor) around the web app in ../ : Apple Health + daily reminders",
+  "scripts": {
+    "web": "node ../tools/www.js",
+    "assets": "npx capacitor-assets generate --iconBackgroundColor '#12b76a' --iconBackgroundColorDark '#12b76a' --splashBackgroundColor '#f4f5f7' --splashBackgroundColorDark '#0c100e'"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/ios": "^8.0.0",
+    "@capacitor/local-notifications": "^8.0.0",
+    "kalori-health": "file:plugins/kalori-health"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.0.0"
+  }
+}

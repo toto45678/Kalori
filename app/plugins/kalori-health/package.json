@@ -1,0 +1,7 @@
+{
+  "name": "kalori-health",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Kalori: reads active + resting energy and the latest body weight from Apple Health (read only, nothing leaves the phone).",
+  "capacitor": { "ios": { "src": "ios" } }
+}

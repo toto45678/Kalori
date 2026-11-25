@@ -1,0 +1,8 @@
+{
+  "appId": "com.sharlizstack.kalori",
+  "appName": "קלוריות",
+  "webDir": "www",
+  "backgroundColor": "#f4f5f7",
+  "ios": { "contentInset": "never", "scrollEnabled": true, "backgroundColor": "#f4f5f7" },
+  "plugins": { "LocalNotifications": { "iconColor": "#12b76a" } }
+}

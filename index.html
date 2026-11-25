@@ -215,6 +215,8 @@ h3.sub{display:flex;align-items:center;gap:6px}
 .tip .svg{color:var(--accd);margin-top:2px}
 .mlist{margin-top:8px}.mrow{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
 .mrow img,.mrow .mi{width:52px;height:52px;border-radius:14px;object-fit:cover}.mrow b{display:block}
+.rrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.rrow:last-child{border-bottom:0}
+.rrow span{flex:1}.rrow input[type=checkbox]{width:22px;height:22px;accent-color:#12b76a}.rrow .i{width:120px;margin:0;background:var(--card)}
 .conf{position:fixed;inset:0;pointer-events:none;z-index:30;overflow:hidden}
 .conf i{position:absolute;top:-12px;width:8px;height:12px;border-radius:2px;animation:cf 2.2s ease-in forwards}
 @keyframes cf{to{top:105%;transform:rotate(540deg) translateX(40px)}}
@@ -370,8 +372,41 @@ function renderBurn(t){
   if($('#bSync'))$('#bSync').onclick=syncFit;
   $('#bFitMan').onclick=()=>openFitSheet(false);
 }
+/* ---------- native iPhone app (Capacitor): Apple Health + daily reminders; the web version keeps the Shortcut way ---------- */
+const NAT=(()=>{try{const C=window.Capacitor;return !!(C&&C.isNativePlatform&&C.isNativePlatform())}catch(e){return false}})();
+function plug(n){try{const C=window.Capacitor;if(!NAT||(C.isPluginAvailable&&!C.isPluginAvailable(n)))return null;return C.registerPlugin?C.registerPlugin(n):C.Plugins[n]}catch(e){return null}}
+const HK=plug('KaloriHealth'),LN=plug('LocalNotifications');
+async function hkAuth(){if(!HK)return false;if(S.hkAsked)return true;try{await HK.requestAuth();S.hkAsked=1;LS.set('kal-set',S);return true}catch(e){return false}}
+// pull today's (or any day's) burn straight from Apple Health — active + resting, measured by the watch
+async function hkSyncDay(d,quiet){
+  if(!(await hkAuth()))return false;
+  try{const r=await HK.dayEnergy({date:d});
+    if(!(r.active>0||r.basal>0)){if(!quiet)toast('אין נתוני שריפה בבריאות ליום הזה (או שאין הרשאה: הגדרות ← בריאות ← גישה לנתונים ← קלוריות)');return false}
+    if(r.basal>0)putFit(d,r.active,r.basal);else putFit(d,r.active,0);
+    if(!quiet){render();toast('סונכרן מהבריאות ✓ '+r0((r.active||0)+(r.basal||0))+' קל׳')}return true}
+  catch(e){if(!quiet)toast('לא הצלחתי לקרוא מהבריאות');return false}
+}
+async function hkWeight(){if(!(await hkAuth()))return null;try{const r=await HK.latestWeight();return r&&r.kg>25?r:null}catch(e){return null}}
+// on every open: refresh today's burn, and take a new weigh-in from a smart scale if there is one
+async function hkAuto(){
+  if(!HK||!S.hkAsked)return;
+  const today=dk(new Date());await hkSyncDay(today,true);
+  const y=addDays(today,-1);if(!FIT[y]||FIT[y].t<'23:00')await hkSyncDay(y,true);   // finish yesterday with its full total
+  const w=await hkWeight();if(w&&w.date&&!W[w.date]&&w.date>=addDays(today,-3)){W[w.date]=Math.round(w.kg*10)/10;LS.set('kal-w',W);S.prof.w=Math.round(curWeight()*10)/10;LS.set('kal-set',S)}
+  render();
+}
+async function lnSchedule(){
+  if(!LN)return;const R2=S.rem||{};
+  try{const pend=await LN.getPending();if(pend&&pend.notifications&&pend.notifications.length)await LN.cancel({notifications:pend.notifications.map(n=>({id:n.id}))});
+    const list=[];
+    if(R2.w)list.push({id:101,title:'שקילת בוקר ⚖️',body:'עלה על המשקל לפני האוכל — ונמשיך במגמה',schedule:{on:{hour:+R2.w.split(':')[0],minute:+R2.w.split(':')[1]},repeats:true}});
+    if(R2.l)list.push({id:102,title:'רשמת היום מה אכלת? 🍽️',body:'דקה אחת — וסוגרים את היום',schedule:{on:{hour:+R2.l.split(':')[0],minute:+R2.l.split(':')[1]},repeats:true}});
+    if(list.length){const pr=await LN.requestPermissions();if(pr.display!=='granted'){toast('צריך לאשר התראות: הגדרות ← התראות ← קלוריות');return}await LN.schedule({notifications:list})}
+  }catch(e){toast('לא הצלחתי לקבוע תזכורת')}
+}
 let syncPending=0;
 function syncFit(){
+  if(HK){hkSyncDay(day,false);return}
   if(!S.scReady){openHelp();return}
   syncPending=Date.now();
   location.href='shortcuts://run-shortcut?name='+encodeURIComponent(S.sc);
@@ -1257,7 +1292,7 @@ function openSet(){
     <div class="grp">
       <button class="li" id="sProf"><i>${ic('user')}</i><div class="t">${esc(S.name||'הפרופיל שלי')}<span>${S.prof.age?`${S.prof.age} · ${S.prof.h} ס״מ · ${S.prof.w} ק״ג · `:''}יעד ${g.kcal} קל׳ — עדכון</span></div></button>
       <button class="li" id="sPlan"><i>${ic('scale')}</i><div class="t">יעד הירידה<span>${S.plan?`יעד ${S.plan.target} ק״ג · ${S.plan.rate} ק״ג בשבוע`:'משקל יעד וקצב'}</span></div></button>
-      <button class="li" id="sFit"><i>${ic('watch')}</i><div class="t">שעון ואפליקציית הבריאות<span>כמה שרפת וגירעון יומי</span></div></button>
+      <button class="li" id="sFit"><i>${ic('watch')}</i><div class="t">שעון ואפליקציית הבריאות<span>${HK?'מחובר ישירות — מסתנכרן לבד בכל פתיחה':'כמה שרפת וגירעון יומי'}</span></div></button>
       <button class="li" id="sMy"><i>${ic('star')}</i><div class="t">המאגר שלי<span>${Object.keys(MY).length} מאכלים שנשמרו</span></div></button>
     </div>
     <h3 class="sub">יעד יומי (אפשר לשנות ידנית)</h3>
@@ -1277,12 +1312,12 @@ function openSet(){
       <button class="li" id="sRes"><i>${ic('restore')}</i><div class="t">שחזור מגיבוי</div></button>
     </div>
     <input type="file" id="resF" accept=".json,application/json" hidden>
-    <p class="note" style="text-align:center;margin-top:16px">גרסה 20</p>`;
+    <p class="note" style="text-align:center;margin-top:16px">גרסה 21</p>`;
   open('#shSet');
   $('#sPlan').onclick=()=>{close('#shSet');openPlan()};
   $('#sProf').onclick=()=>{close('#shSet');openOnb(1)};
   $('#sTest').onclick=async()=>{const bt=$('#sTest');if(bt.disabled)return;bt.disabled=true;S.key=$('#sKey').value.trim();LS.set('kal-set',S);const o=$('#sTestOut');o.textContent='בודק…';await testConn(o);bt.disabled=false};
-  $('#sFit').onclick=()=>{close('#shSet');openHelp()};
+  $('#sFit').onclick=()=>{close('#shSet');if(HK){S.hkAsked=0;hkSyncDay(day,false)}else openHelp()};
   $('#sOk').onclick=()=>{S.key=$('#sKey').value.trim();for(const [k] of MAC){const v=parseFloat($('#g_'+k).value);if(v>0)S.goal[k]=v}
     LS.set('kal-set',S);localStorage.removeItem('kal-models2');close('#shSet');render();toast('נשמר ✓')};
   $('#sShare').onclick=()=>{const u=location.href.split('#')[0].split('?')[0];
@@ -1533,7 +1568,7 @@ function openWeigh(fromShortcut){
     <p class="note">הכי מדויק: בבוקר, אחרי שירותים, לפני אוכל. מספיקה פעם ביום — המגמה מחליקה את התנודות.</p>
     <div class="wbig"><button class="add" id="wM" aria-label="פחות">−</button><input class="i" id="wIn" type="number" inputmode="decimal" step="0.1" value="${v??(lastWeigh()?kg(lastWeigh().w):S.prof.w||'')}"><button class="add" id="wP" aria-label="יותר">+</button></div>
     <div class="mut" style="text-align:center">ק״ג</div>
-    <button class="btn sec w" id="wHealth" style="margin-top:12px">${ic('heart',18)} ${fromShortcut?'הדבק מהבריאות':'מהמשקל החכם / אפליקציית הבריאות'}</button>
+    <button class="btn sec w" id="wHealth" style="margin-top:12px">${ic('heart',18)} ${HK?'מאפליקציית הבריאות':fromShortcut?'הדבק מהבריאות':'מהמשקל החכם / אפליקציית הבריאות'}</button>
     <div id="wDiag"></div>
     <div class="row" style="margin-top:12px">${v!=null?'<button class="btn del" id="wDel">מחק</button>':''}<button class="btn" id="wOk">שמור</button></div>`;
   open('#shAdd');
@@ -1542,6 +1577,7 @@ function openWeigh(fromShortcut){
   $('#wOk').onclick=()=>{const x=num(inp.value);if(!(x>25&&x<350)){toast('משקל לא תקין');return}saveWeight(today,x)};
   if($('#wDel'))$('#wDel').onclick=()=>{delete W[today];LS.set('kal-w',W);close('#shAdd');render()};
   $('#wHealth').onclick=async()=>{
+    if(HK){const r=await hkWeight();if(r){inp.value=(+r.kg).toFixed(1);toast('נמצא בבריאות: '+kg(r.kg)+' ('+fmtD(r.date)+')')}else toast('אין שקילה בבריאות (או שאין הרשאה)');return}
     if(!fromShortcut){if(!S.scWReady){openWeighHelp();return}wSyncPending=Date.now();location.href='shortcuts://run-shortcut?name='+encodeURIComponent(S.scW||'משקל');return}
     try{const raw=await navigator.clipboard.readText(),m=String(raw).replace(',','.').match(/\d{2,3}(?:\.\d+)?/),x=m?parseFloat(m[0]):NaN;
       if(x>25&&x<350){S.scWReady=1;inp.value=x.toFixed(1);saveWeight(today,x)}
@@ -1717,6 +1753,7 @@ function openMeasure(d){
   if($('#mDel'))$('#mDel').onclick=()=>{delete M[d];LS.set('kal-m',M);close('#shAdd');openProg()};
 }
 function openRemind(){
+  if(LN){openRemindNative();return}
   $('#addPn').innerHTML=`<h2>תזכורת יומית</h2>
     <p class="note">אפליקציה מהאתר לא יכולה לשלוח התראות לבד, אבל אייפון יכול — דרך "פעולות אוטומטיות":</p>
     <ol class="sc">
@@ -1730,12 +1767,23 @@ function openRemind(){
   open('#shAdd');$('#rmOk').onclick=()=>close('#shAdd');
 }
 
+function openRemindNative(){
+  const R2=S.rem||{};
+  $('#addPn').innerHTML=`<h2>תזכורות</h2><p class="note">התראה יומית באייפון. אפשר לכבות בכל רגע.</p>
+    <div class="grp" style="padding:4px 14px">
+      <label class="rrow"><input type="checkbox" id="rW" ${R2.w?'checked':''}><span>שקילת בוקר</span><input class="i" type="time" id="rWt" value="${R2.w||'07:30'}"></label>
+      <label class="rrow"><input type="checkbox" id="rL" ${R2.l?'checked':''}><span>רישום אוכל בערב</span><input class="i" type="time" id="rLt" value="${R2.l||'20:30'}"></label></div>
+    <button class="btn w" id="rmOk" style="margin-top:14px">שמור</button>`;
+  open('#shAdd');
+  $('#rmOk').onclick=async()=>{S.rem={w:$('#rW').checked?$('#rWt').value:null,l:$('#rL').checked?$('#rLt').value:null};LS.set('kal-set',S);await lnSchedule();close('#shAdd');toast('נשמר ✓')};
+}
 /* ---------- start ---------- */
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)render()});
 if(!S.onb&&(Object.keys(DB).length||S.key))S.onb=1;   // existing users skip the welcome
 render();
 if(!S.onb)setTimeout(()=>openOnb(0),300);
 else{maybeCheckin();checkMilestones()}
+if(HK){hkAuto();document.addEventListener('visibilitychange',()=>{if(!document.hidden)hkAuto()})}
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
