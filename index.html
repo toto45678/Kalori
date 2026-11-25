@@ -217,6 +217,9 @@ h3.sub{display:flex;align-items:center;gap:6px}
 .mrow img,.mrow .mi{width:52px;height:52px;border-radius:14px;object-fit:cover}.mrow b{display:block}
 .rrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.rrow:last-child{border-bottom:0}
 .rrow span{flex:1}.rrow input[type=checkbox]{width:22px;height:22px;accent-color:#12b76a}.rrow .i{width:120px;margin:0;background:var(--card)}
+.woC{padding:12px 16px 6px}.woC .wh{display:flex;align-items:center;gap:10px;padding-bottom:6px}.woC .wh b{flex:1}.woC .wh .k{color:var(--mut);font-size:.88rem}
+.woC .none{color:var(--mut);font-size:.86rem;padding:2px 0 8px}
+.wr2{display:flex;justify-content:space-between;padding:9px 0;border-top:1px solid var(--line);font-size:.92rem}
 .conf{position:fixed;inset:0;pointer-events:none;z-index:30;overflow:hidden}
 .conf i{position:absolute;top:-12px;width:8px;height:12px;border-radius:2px;animation:cf 2.2s ease-in forwards}
 @keyframes cf{to{top:105%;transform:rotate(540deg) translateX(40px)}}
@@ -329,6 +332,7 @@ const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.par
 let S=LS.get('kal-set',{key:'',goal:{kcal:2000,protein:120,carbs:220,fat:65}});
 S.prof=S.prof||{sex:'m',age:0,h:0,w:0};S.sc=S.sc||'קלוריות כושר';
 let DB=LS.get('kal-db',{});            // {'2026-11-23':[entry,...]}
+let WO=LS.get('kal-wo',{});         // {'2026-11-25':[{type,min,lvl,kcal,src,time}]} workouts typed by hand
 let FIT=LS.get('kal-fit',{});          // {'2026-11-23':{act,rest,t}}  burned kcal from Apple Health (via Shortcuts) or typed
 function save(){
   if(LS.set('kal-db',DB))return;
@@ -348,13 +352,14 @@ function totals(list){const t={kcal:0,protein:0,carbs:0,fat:0};
 function bmr(){const p=S.prof;if(!(p.age>0&&p.h>0&&p.w>0))return 0;return 10*p.w+6.25*p.h-5*p.age+(p.sex==='f'?-161:5)}
 function dayFrac(){const n=new Date();return (n.getHours()*60+n.getMinutes())/1440}
 // {rest,act,tot,restEst} or null when nothing is known about that day
+function woKcal(d){return (WO[d]||[]).reduce((s,w)=>s+(+w.kcal||0),0)}
 function burnOf(d){
-  const f=FIT[d],today=d===dk(new Date()),b=bmr();
-  if(f&&f.tot>0)return {rest:0,act:f.tot,tot:f.tot,restEst:false,noRest:false,t:f.t,total:1};   // the watch's total (active + resting): no estimate on top
-  let rest=f&&f.rest>0?f.rest:null,act=f?(+f.act||0):0,restEst=false;
+  const f=FIT[d],today=d===dk(new Date()),b=bmr(),wk=woKcal(d);
+  if(f&&f.tot>0)return {rest:0,act:f.tot+wk,tot:f.tot+wk,wo:wk,restEst:false,noRest:false,t:f.t,total:1};   // the watch's total (active + resting): no estimate on top
+  let rest=f&&f.rest>0?f.rest:null,act=(f?(+f.act||0):0)+wk,restEst=false;
   if(rest==null&&b){rest=today?b*dayFrac():b;restEst=true}
-  if(rest==null&&!f)return null;
-  return {rest:rest||0,act,tot:(rest||0)+act,restEst,noRest:rest==null,t:f&&f.t};
+  if(rest==null&&!f&&!wk)return null;
+  return {rest:rest||0,act,tot:(rest||0)+act,wo:wk,restEst,noRest:rest==null,t:f&&f.t};
 }
 function renderBurn(t){
   const el=$('#burn'),bu=burnOf(day),today=day===dk(new Date());
@@ -362,15 +367,50 @@ function renderBurn(t){
     const df=bu.tot-t.kcal;
     el.innerHTML=`<div class="card burnC"><div class="ic ${df>=0?'fl':'wr'}">${ic(df>=0?'flame':'warn',24)}</div>
       <div class="tx"><span class="mut">${df>=0?'גירעון':'עודף'}${today?' עד עכשיו':''}</span><b class="${df>=0?'ok':'bad'}">${r0(Math.abs(df)).toLocaleString()} קל׳</b>
-      <span class="mut">שרפת ${r0(bu.tot).toLocaleString()}${bu.total?' (סה״כ מהשעון)':bu.restEst?' (מנוחה בחישוב)':''}${bu.t?' · עודכן '+bu.t:''}</span></div>
+      <span class="mut">שרפת ${r0(bu.tot).toLocaleString()}${bu.wo?` (כולל אימונים ${r0(bu.wo)})`:bu.total?' (סה״כ מהשעון)':bu.restEst?' (מנוחה בחישוב)':''}${bu.t?' · עודכן '+bu.t:''}</span></div>
       <div class="bt">${today?`<button class="pill g" id="bSync">${ic('watch',17)} סנכרן</button>`:''}<button class="pill ib2" id="bFitMan" aria-label="הזן ידנית">${ic('pencil',17)}</button></div></div>`;
   }else{
     el.innerHTML=`<div class="card burnC"><div class="ic wt">${ic('watch',24)}</div>
       <div class="tx"><b style="font-size:.95rem">כמה שרפת היום?</b><span class="mut">${bu&&bu.noRest?'פעילות '+r0(bu.act)+' · הוסף פרופיל לחישוב גירעון':'חבר את השעון כדי לראות גירעון'}</span></div>
       <div class="bt">${today?'<button class="pill g" id="bSync">חבר</button>':''}<button class="pill ib2" id="bFitMan" aria-label="הזן ידנית">${ic('pencil',17)}</button></div></div>`;
   }
+  const ws=WO[day]||[];
+  el.innerHTML+=`<div class="card woC"><div class="wh"><span class="mi" style="--mb:#fef0c7;--mf:#dc6803">${ic('run',20)}</span><b>אימונים</b>
+    <span class="k">${ws.length?r0(woKcal(day))+' קל׳':''}</span><button class="add" id="bWo" aria-label="הוסף אימון">${ic('plus',18,2.4)}</button></div>
+    ${ws.length?ws.map((w,i)=>`<div class="wr2" data-wo="${i}"><span>${esc(w.type)}${w.min?` · ${w.min} דק׳`:''}</span><b>${r0(w.kcal)}</b></div>`).join(''):'<div class="none">אימון שהשעון לא מדד? הוסף אותו כאן</div>'}</div>`;
   if($('#bSync'))$('#bSync').onclick=syncFit;
   $('#bFitMan').onclick=()=>openFitSheet(false);
+  $('#bWo').onclick=()=>openWorkout(-1);
+  el.querySelectorAll('[data-wo]').forEach(r=>r.onclick=()=>openWorkout(+r.dataset.wo));
+}
+/* ---------- manual workouts: type + minutes + effort → estimated kcal (net, above resting), or the device's number ---------- */
+const WOT=[['הליכה',[2.8,3.5,5]],['ריצה',[7,9.8,11.5]],['אופניים',[5.5,7.5,10]],['שחייה',[5.8,7,9.8]],['חדר כושר',[3.5,5,6]],['HIIT / קרוספיט',[6,8,10]],
+  ['יוגה / פילאטיס',[2.5,3,4]],['משחק כדור',[5,7,9]],['ריקוד',[4,5,7]],['טניס / פאדל',[5,7,8]],['טיפוס / הליכה בשטח',[5,6.5,8]],['אחר',[3.5,5,7]]];
+function woEst(type,min,lvl){const t=WOT.find(x=>x[0]===type)||WOT[WOT.length-1],met=t[1][lvl??1],w=curWeight?curWeight()||S.prof.w||75:S.prof.w||75;
+  return Math.max(0,Math.round((met-1)*w*(+min||0)/60))}
+function openWorkout(i){
+  const cur0=i>=0?(WO[day]||[])[i]:null,o=cur0?{...cur0}:{type:'הליכה',min:30,lvl:1,kcal:null,src:'est'};
+  $('#addPn').innerHTML=`<h2>${cur0?'עריכת אימון':'אימון'}</h2>
+    <div class="chips" id="woT">${WOT.map(t=>`<button data-t="${esc(t[0])}" class="${t[0]===o.type?'on':''}">${esc(t[0])}</button>`).join('')}</div>
+    <div class="g2" style="margin-top:12px">
+      <label class="f" style="margin:0">משך (דקות)<input class="i" id="woM" type="number" inputmode="numeric" value="${o.min||''}"></label>
+      <div><div class="f" style="margin:0">עצימות</div><div class="sel" id="woL">${['קלה','בינונית','גבוהה'].map((n,k)=>`<button data-l="${k}" class="${k===(o.lvl??1)?'on':''}">${n}</button>`).join('')}</div></div></div>
+    <label class="f">קלוריות שנשרפו<input class="i" id="woK" type="number" inputmode="numeric" value="${o.kcal??''}" placeholder=""></label>
+    <div class="note" id="woN"></div>
+    <p class="note">הוסף רק אימון ש<b>השעון לא מדד</b> — מה שהשעון מדד כבר נכנס לשריפה.</p>
+    <div class="row" style="margin-top:12px">${cur0?'<button class="btn del" id="woDel">מחק</button>':''}<button class="btn" id="woOk">שמור</button></div>`;
+  open('#shAdd');
+  let typed=o.src==='dev';
+  const upd=()=>{const e=woEst(o.type,$('#woM').value,o.lvl);$('#woN').textContent=`הערכה: ≈ ${e} קל׳ מעבר למנוחה${typed?' · נכתב ידנית: '+($('#woK').value||0):''}`;
+    if(!typed)$('#woK').value=e};
+  const pick=(id,fn)=>{$(id).onclick=ev=>{const b=ev.target.closest('button');if(!b)return;$(id).querySelectorAll('button').forEach(z=>z.classList.toggle('on',z===b));fn(b);upd()}};
+  pick('#woT',b=>o.type=b.dataset.t);pick('#woL',b=>o.lvl=+b.dataset.l);
+  $('#woM').oninput=upd;$('#woK').oninput=()=>{typed=$('#woK').value!=='';upd()};
+  upd();
+  $('#woOk').onclick=()=>{const k=num($('#woK').value),m=+$('#woM').value||0;if(!(k>0)){toast('כמה קלוריות?');return}
+    const w={type:o.type,min:m,lvl:o.lvl,kcal:Math.round(k),src:typed?'dev':'est',time:o.time||new Date().toTimeString().slice(0,5)};
+    const L=WO[day]=WO[day]||[];if(i>=0)L[i]=w;else L.push(w);LS.set('kal-wo',WO);close('#shAdd');render();toast(`נשמר ✓ ${w.type} · ${w.kcal} קל׳`)};
+  if($('#woDel'))$('#woDel').onclick=()=>{WO[day].splice(i,1);if(!WO[day].length)delete WO[day];LS.set('kal-wo',WO);close('#shAdd');render()};
 }
 /* ---------- native iPhone app (Capacitor): Apple Health + daily reminders; the web version keeps the Shortcut way ---------- */
 const NAT=(()=>{try{const C=window.Capacitor;return !!(C&&C.isNativePlatform&&C.isNativePlatform())}catch(e){return false}})();
@@ -1110,12 +1150,14 @@ function drawRes(q,fav,prev){
       <button class="tile" id="tCam"><i style="--tb:#dcfae6;--tf:#079455">${ic('camera')}</i><b>צלם את הצלחת</b><span>AI מזהה ומחשב</span></button>
       <button class="tile" id="tRead"><i style="--tb:#e0f2fe;--tf:#0086c9">${ic('scan')}</i><b>מצילום מסך</b><span>קורא ערכים בלי AI</span></button>
       <button class="tile" id="tDesc"><i style="--tb:#f4ebff;--tf:#7f56d9">${ic('chat')}</i><b>תאר ארוחה</b><span>"2 ביצים ופרוסת לחם"</span></button>
-      <button class="tile" id="tMan"><i style="--tb:#fef0c7;--tf:#dc6803">${ic('pencil')}</i><b>הזנה ידנית</b><span>אתה כותב את הערכים</span></button></div>
+      <button class="tile" id="tMan"><i style="--tb:#fef0c7;--tf:#dc6803">${ic('pencil')}</i><b>הזנה ידנית</b><span>אתה כותב את הערכים</span></button>
+      <button class="tile" id="tWo" style="grid-column:1/-1;flex-direction:row;align-items:center;gap:12px"><i style="--tb:#fff4ed;--tf:#ec4a0a;margin:0">${ic('run')}</i><span style="display:flex;flex-direction:column"><b>אימון</b><span>סוג, משך וקלוריות שנשרפו</span></span></button></div>
       ${list.length?`<h3 class="sub">${ic('star',16)} הקבועים שלך</h3>${list.map((f,i)=>row(f,i)).join('')}`:''}
       ${prev.length?`<h3 class="sub">${ic('repeat',16)} שוב את אותה ארוחה</h3>${prev.map((e,i)=>{const t=totals([e]);return `<div class="fr" data-p="${i}"><div class="nm"><b>${esc(e.items.map(x=>x.name).join(', '))}</b>
         <span>${e.meal} · ${r0(t.kcal)} קל׳</span></div><button class="add" data-pp="${i}" aria-label="הוסף">${ic('plus',18,2.4)}</button></div>`}).join('')}`:''}`;
     $('#tCam').onclick=pickPhoto;$('#tRead').onclick=openRead;
     $('#tDesc').onclick=()=>openDesc();
+    $('#tWo').onclick=()=>openWorkout(-1);
     $('#tMan').onclick=()=>openReview({meal:mealNow(),items:[...BASK,{name:'',grams:100,kcal:0,protein:0,carbs:0,fat:0}]},-1);
     el.querySelectorAll('[data-p],[data-pp]').forEach(r=>r.onclick=()=>{const e=prev[+(r.dataset.p??r.dataset.pp)];
       for(const x of e.items)BASK.push({...x,done:1});drawBask();toast('נוסף: '+e.items.map(x=>x.name).join(', '))});
@@ -1312,7 +1354,7 @@ function openSet(){
       <button class="li" id="sRes"><i>${ic('restore')}</i><div class="t">שחזור מגיבוי</div></button>
     </div>
     <input type="file" id="resF" accept=".json,application/json" hidden>
-    <p class="note" style="text-align:center;margin-top:16px">גרסה 21</p>`;
+    <p class="note" style="text-align:center;margin-top:16px">גרסה 22</p>`;
   open('#shSet');
   $('#sPlan').onclick=()=>{close('#shSet');openPlan()};
   $('#sProf').onclick=()=>{close('#shSet');openOnb(1)};
@@ -1325,11 +1367,11 @@ function openSet(){
     else{navigator.clipboard&&navigator.clipboard.writeText(u);toast('הקישור הועתק')}};
   $('#sCsv').onclick=exportCsv;
   $('#sMy').onclick=()=>{close('#shSet');openMy()};
-  $('#sBak').onclick=()=>download('kalori-backup-'+dk(new Date())+'.json',JSON.stringify({v:4,name:S.name,goal:S.goal,prof:S.prof,plan:S.plan,act:S.act,goalType:S.goalType,db:DB,fit:FIT,my:MY,w:W,m:M}),'application/json');
+  $('#sBak').onclick=()=>download('kalori-backup-'+dk(new Date())+'.json',JSON.stringify({v:4,name:S.name,goal:S.goal,prof:S.prof,plan:S.plan,act:S.act,goalType:S.goalType,db:DB,fit:FIT,my:MY,w:W,m:M,wo:WO}),'application/json');
   $('#sRes').onclick=()=>{$('#resF').value='';$('#resF').click()};
   $('#resF').onchange=async ev=>{const f=ev.target.files[0];if(!f)return;
     try{const o=JSON.parse(await f.text());if(!o.db)throw 0;if(!confirm('לשחזר? זה יחליף את מה שיש עכשיו.'))return;
-      DB=o.db;if(o.goal)S.goal=o.goal;if(o.prof)S.prof=o.prof;if(o.name)S.name=o.name;if(o.fit){FIT=o.fit;LS.set('kal-fit',FIT)}if(o.my){MY=o.my;saveMy()}if(o.w){W=o.w;LS.set('kal-w',W)}if(o.m){M=o.m;LS.set('kal-m',M)}if(o.plan){S.plan=o.plan;S.act=o.act;S.goalType=o.goalType}LS.set('kal-set',S);save();close('#shSet');render();toast('שוחזר ✓')}
+      DB=o.db;if(o.goal)S.goal=o.goal;if(o.prof)S.prof=o.prof;if(o.name)S.name=o.name;if(o.fit){FIT=o.fit;LS.set('kal-fit',FIT)}if(o.my){MY=o.my;saveMy()}if(o.w){W=o.w;LS.set('kal-w',W)}if(o.wo){WO=o.wo;LS.set('kal-wo',WO)}if(o.m){M=o.m;LS.set('kal-m',M)}if(o.plan){S.plan=o.plan;S.act=o.act;S.goalType=o.goalType}LS.set('kal-set',S);save();close('#shSet');render();toast('שוחזר ✓')}
     catch(e){toast('קובץ גיבוי לא תקין')}};
 }
 /* ---------- onboarding: name → body → activity + goal → targets → AI key ---------- */
