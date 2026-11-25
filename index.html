@@ -229,6 +229,7 @@ h3.sub{display:flex;align-items:center;gap:6px}
 .toast.act{pointer-events:auto;display:flex;align-items:center;gap:14px}
 .toast button{border:0;background:none;color:#6ce9a6;font-weight:700;padding:6px 4px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.bakC{display:flex;align-items:center;gap:10px;padding:12px 14px;font-size:.86rem}.bakC .svg{color:var(--accd);flex:none}.bakC .btn{padding:8px 14px;min-height:0;flex:none}
 .conf{position:fixed;inset:0;pointer-events:none;z-index:30;overflow:hidden}
 .conf i{position:absolute;top:-12px;width:8px;height:12px;border-radius:2px;animation:cf 2.2s ease-in forwards}
 @keyframes cf{to{top:105%;transform:rotate(540deg) translateX(40px)}}
@@ -1437,11 +1438,12 @@ function openSet(){
     <div class="grp">
       <button class="li" id="sShare"><i>${ic('share')}</i><div class="t">שתף את האפליקציה<span>למשל לבן/בת הזוג — כל אחד מקבל יומן נפרד</span></div></button>
       <button class="li" id="sCsv"><i>${ic('table')}</i><div class="t">ייצוא טבלה (CSV)<span>נפתח באקסל</span></div></button>
-      <button class="li" id="sBak"><i>${ic('save')}</i><div class="t">גיבוי<span>קובץ עם כל הנתונים (גם מפתח ה-AI) · מומלץ פעם בשבוע</span></div></button>
+      <button class="li" id="sBak"><i>${ic('save')}</i><div class="t">גיבוי<span>${S.lastBak?'אחרון: '+fmtD(S.lastBak):'עוד לא נשמר'} · שמור ב-iCloud Drive</span></div></button>
       <button class="li" id="sRes"><i>${ic('restore')}</i><div class="t">שחזור מגיבוי<span>מתמזג עם מה שיש, לא מוחק כלום</span></div></button>
     </div>
+    <div class="note" style="color:var(--warn)">⚠️ מחיקת האפליקציה ממסך הבית מוחקת את כל הנתונים שלה. לפני מחיקה — שמור גיבוי.</div>
     <input type="file" id="resF" accept=".json,application/json" hidden>
-    <p class="note" style="text-align:center;margin-top:16px">גרסה 24</p>`;
+    <p class="note" style="text-align:center;margin-top:16px">גרסה 25</p>`;
   open('#shSet');
   $('#sPlan').onclick=()=>{close('#shSet');openPlan()};
   $('#sProf').onclick=()=>{close('#shSet');openOnb(1)};
@@ -1454,10 +1456,11 @@ function openSet(){
     else{navigator.clipboard&&navigator.clipboard.writeText(u);toast('הקישור הועתק')}};
   $('#sCsv').onclick=exportCsv;
   $('#sMy').onclick=()=>{close('#shSet');openMy()};
-  $('#sBak').onclick=()=>{S.lastBak=dk(new Date());LS.set('kal-set',S);download('kalori-backup-'+dk(new Date())+'.json',backupJson(),'application/json')};
+  $('#sBak').onclick=()=>{doBackup();return;download('kalori-backup-'+dk(new Date())+'.json',backupJson(),'application/json')};
   $('#sRes').onclick=()=>{$('#resF').value='';$('#resF').click()};
   $('#resF').onchange=ev=>restoreFile(ev.target.files[0]);
 }
+function doBackup(){S.lastBak=dk(new Date());LS.set('kal-set',S);download('kalori-backup-'+dk(new Date())+'.json',backupJson(),'application/json');render()}
 function backupJson(){return JSON.stringify({v:5,t:new Date().toISOString(),set:S,db:DB,fit:FIT,my:MY,w:W,m:M,wo:WO})}
 async function restoreFile(f){if(!f)return;
   try{const o=JSON.parse(await f.text());if(!o.db)throw 0;
@@ -1694,6 +1697,9 @@ function renderWL(t){
         <div class="r3">${weighed?`נשקלת היום: ${kg(lw.w)}`:'מגמה'}${e&&!e.done?` · יעד בערך ב-${fmtD(e.d,{day:'numeric',month:'long'})}`:e&&e.done?' · הגעת ליעד! 🎉':''}</div></div></button>`;
   }
   rd.innerHTML=rh;
+  const nDays=Object.keys(DB).length+Object.keys(W).length;
+  if(isToday&&nDays>=2&&(!S.lastBak||daysBetween(S.lastBak,today)>=3))
+    h+=`<div class="card bakC">${ic('save',20)}<span><b>גיבוי</b> · ${S.lastBak?`הגיבוי האחרון לפני ${daysBetween(S.lastBak,today)} ימים`:'עוד לא שמרת גיבוי'}. שמור קובץ ב-iCloud Drive כדי שהנתונים לא ילכו לאיבוד.</span><button class="btn" id="bBak">שמור</button></div>`;
   if(isToday){
     const b=weekBudget(),t2=totals(DB[today]),pg=S.goal.protein-t2.protein;
     h+=`<div class="chrow"><button class="chip2 ${b.left<0?'bad':''}" id="cBud">${ic('table',17)}<span>${b.left<0?'חריגה ':'נשארו '}<b>${Math.abs(r0(b.left)).toLocaleString()}</b> השבוע</span></button>
@@ -1704,6 +1710,7 @@ function renderWL(t){
   }
   el.innerHTML=h;
   if($('#wqBtn'))$('#wqBtn').onclick=()=>openWeigh();
+  if($('#bBak'))$('#bBak').onclick=doBackup;
   if($('#cBud'))$('#cBud').onclick=()=>{const b=weekBudget();toast(b.daysLeft>1?`תקציב השבוע: עוד ${b.daysLeft} ימים · בממוצע ${Math.max(0,b.perDay).toLocaleString()} ליום`:'היום האחרון של השבוע')};
   if($('#cPro'))$('#cPro').onclick=openProtein;
 }
@@ -1811,7 +1818,7 @@ function openCheckin(r,ws){
   const cw=curWeight()||S.prof.w||80,rr=rawRate(),loss=Math.max(r.dW!=null?-r.dW:0,rr||0),fast=loss>cw*.01;
   if(fast)tips.push(['warn',`יורד בערך ${loss.toFixed(2)} ק״ג בשבוע — יותר מ-1% ממשקל הגוף. מהר מדי לירידה מבוקרת: כדאי לאכול קצת יותר.`]);
   if(r.dW!=null&&r.dW>0&&r.avgK<g.kcal)tips.push(['chart','המשקל עלה למרות שאכלת מתחת ליעד — כנראה מים/מלח. זה מתאזן בדרך כלל תוך כמה ימים.']);
-  if(!S.lastBak||daysBetween(S.lastBak,dk(new Date()))>=7)tips.push(['save','גיבוי שבועי: שמור קובץ גיבוי כדי שהנתונים לא ילכו לאיבוד. <button class="pill g" id="ciBak">שמור גיבוי</button>']);
+  if(!S.lastBak||daysBetween(S.lastBak,dk(new Date()))>=3)tips.push(['save','גיבוי שבועי: שמור קובץ גיבוי כדי שהנתונים לא ילכו לאיבוד. <button class="pill g" id="ciBak">שמור גיבוי</button>']);
   if(!tips.length)tips.push(['star','שבוע מצוין — ממשיכים ככה!']);
   let newK=t&&Math.abs(t.kcal-g.kcal)>=50?t.kcal:null;
   if(fast)newK=Math.max(newK||0,g.kcal+150);   // too fast → never suggest eating less
