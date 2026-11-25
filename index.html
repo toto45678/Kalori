@@ -230,6 +230,10 @@ h3.sub{display:flex;align-items:center;gap:6px}
 .toast button{border:0;background:none;color:#6ce9a6;font-weight:700;padding:6px 4px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 .bakC{display:flex;align-items:center;gap:10px;padding:12px 14px;font-size:.86rem}.bakC .svg{color:var(--accd);flex:none}.bakC .btn{padding:8px 14px;min-height:0;flex:none}
+.paks{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 6px}
+.pak{border:2px solid var(--line);background:var(--card);border-radius:18px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.pak b{font-size:2rem;line-height:1}.pak span{color:var(--mut);font-size:.85rem}.pak em{font-style:normal;margin-top:8px;background:var(--btn);color:#fff;border-radius:999px;padding:6px 16px;font-weight:600}
+details summary{cursor:pointer}
 .conf{position:fixed;inset:0;pointer-events:none;z-index:30;overflow:hidden}
 .conf i{position:absolute;top:-12px;width:8px;height:12px;border-radius:2px;animation:cf 2.2s ease-in forwards}
 @keyframes cf{to{top:105%;transform:rotate(540deg) translateX(40px)}}
@@ -752,6 +756,14 @@ function thumbOf(dataUrl){return new Promise(ok=>{const im=new Image();im.onload
 
 /* ---------- Gemini (free tier) ---------- */
 const API='https://generativelanguage.googleapis.com/v1beta/';
+const AI_SERVER='https://kalori-ai.REPLACE.workers.dev';   // set at deploy (server/worker.js)
+const FREE_AI=5, PACKS={ai_50:50,ai_200:200};
+function ownKey(){return (S.key||'').trim()}
+function useServer(){return !ownKey()&&NAT&&!/REPLACE/.test(AI_SERVER)}
+function devId(){if(!S.dev){S.dev=(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2));LS.set('kal-set',S)}return S.dev}
+function aiState(){const t=dk(new Date());S.ai=S.ai||{d:t,n:0,cr:0};if(S.ai.d!==t){S.ai.d=t;S.ai.n=0}return S.ai}
+function aiLeft(){const a=aiState();return Math.max(0,FREE_AI-a.n)+(a.cr||0)}
+function aiUse(){const a=aiState();if(a.n<FREE_AI)a.n++;else a.cr=Math.max(0,(a.cr||0)-1);LS.set('kal-set',S)}
 const SCHEMA={type:'OBJECT',properties:{items:{type:'ARRAY',items:{type:'OBJECT',properties:{
   name:{type:'STRING'},grams:{type:'NUMBER'},kcal:{type:'NUMBER'},protein:{type:'NUMBER'},carbs:{type:'NUMBER'},fat:{type:'NUMBER'}},
   required:['name','grams','kcal','protein','carbs','fat']}},notFood:{type:'BOOLEAN'}},required:['items']};
@@ -770,7 +782,7 @@ async function fetchT(url,opts,ms,step){
 async function models(key,fresh){
   const c=LS.get('kal-models2',null);
   if(!fresh&&c&&c.k===key.slice(-6)&&Date.now()-c.t<864e5&&c.list.length)return c.list;
-  const r=await fetchT(API+'models?pageSize=200&key='+encodeURIComponent(key),{},20000,'models');
+  const r=await fetchT(useServer()?AI_SERVER+'/v1/models':API+'models?pageSize=200&key='+encodeURIComponent(key),{},20000,'models');
   if(r.status===400||r.status===403){DIAG.last='models: HTTP '+r.status;throw Object.assign(new Error('key'),{code:'key'})}
   let list=[];
   try{
@@ -790,8 +802,8 @@ async function models(key,fresh){
 async function gen(key,m,parts,schema,ms){
   const cfg={temperature:.2};
   if(schema){cfg.responseMimeType='application/json';cfg.responseSchema=schema}
-  const url=API+'models/'+m+':generateContent?key='+encodeURIComponent(key);
-  const send=c=>fetchT(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts}],generationConfig:c})},ms,m);
+  const sv=useServer(),url=sv?AI_SERVER+'/v1/models/'+m+':generateContent':API+'models/'+m+':generateContent?key='+encodeURIComponent(key);
+  const send=c=>fetchT(url,{method:'POST',headers:sv?{'Content-Type':'application/json','x-device':devId()}:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts}],generationConfig:c})},ms,m);
   // no "thinking" = much faster; models that don't accept the setting get it without
   let r=await send({...cfg,thinkingConfig:{thinkingBudget:0}});
   if(r.status===400){let msg='';try{msg=(await r.clone().json()).error?.message||''}catch(e){}
@@ -800,7 +812,8 @@ async function gen(key,m,parts,schema,ms){
 }
 async function analyze({img,text}){
   DIAG.last='';
-  const key=(S.key||'').trim();if(!key)throw Object.assign(new Error('nokey'),{code:'nokey'});
+  const key=ownKey()||(useServer()?'server':'');if(!key)throw Object.assign(new Error('nokey'),{code:'nokey'});
+  if(useServer()&&aiLeft()<=0)throw Object.assign(new Error('quota0'),{code:'quota0'});
   const parts=[];
   if(img)parts.push({inline_data:{mime_type:'image/jpeg',data:img.split(',')[1]}});
   parts.push({text:PROMPT.replace('{SRC}',img?'שרואים בתמונה':'בתיאור הבא')+(text?`\n${img?'הערה מהמשתמש':'התיאור'}: ${text}`:'')});
@@ -813,10 +826,11 @@ async function analyze({img,text}){
     catch(e){if(e.code==='timeout'&&++tries<2){last='timeout';continue}throw e}
     if(r.ok){const j=await r.json();
       const t=(j.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('');
-      try{const o=JSON.parse(t);o.model=m;LS.set('kal-good',m);return o}catch(e){last='parse';DIAG.last=m+': bad JSON';continue}}
+      try{const o=JSON.parse(t);o.model=m;LS.set('kal-good',m);if(useServer())aiUse();return o}catch(e){last='parse';DIAG.last=m+': bad JSON';continue}}
     const st=r.status;let msg='';try{msg=(await r.json()).error?.message||''}catch(e){}
     log.push(`${m}: ${st}`);DIAG.last=log.join(' · ')+' — '+msg.slice(0,90);
     if(st===404)continue;                   // model name not offered to this key
+    if(useServer()&&st===429&&/limit/.test(msg))throw Object.assign(new Error('srvcap'),{code:'srvcap'});
     if(st===400&&/API key|API_KEY/i.test(msg))throw Object.assign(new Error('key'),{code:'key'});
     if(st===400&&/location|region|country/i.test(msg))throw Object.assign(new Error('geo'),{code:'geo'});
     if(st===403)throw Object.assign(new Error('key'),{code:'key'});
@@ -843,7 +857,7 @@ async function testConn(out){
   }
   line(ok>0,ok?'יש מודל שעובד — האפליקציה תשתמש בו.':'כל המודלים עמוסים או חסומים כרגע. נסה שוב בעוד כמה דקות.');
 }
-const ERR={nokey:'עוד לא הוכנס מפתח. פתח את ההגדרות.',key:'המפתח לא תקין. בדוק אותו בהגדרות.',
+const ERR={quota0:'נגמרו זיהויי ה-AI להיום.',srvcap:'הגעת למגבלת השימוש היומית בשרת. נסה שוב מחר.',nokey:NAT?'ה-AI לא זמין כרגע.':'עוד לא הוכנס מפתח. פתח את ההגדרות.',key:'המפתח לא תקין. בדוק אותו בהגדרות.',
   quota:'נגמרה המכסה החינמית של גוגל כרגע. נסה שוב בעוד דקה, או מחר. בינתיים אפשר להוסיף ידנית.',
   net:'הטלפון לא מצליח להגיע לשרת של גוגל. אם יש לך אינטרנט מסונן, VPN או חוסם פרסומות — הם כנראה חוסמים את generativelanguage.googleapis.com. נסה גם בסלולרי במקום וויי-פיי.',
   timeout:'גוגל לא ענו בזמן (כנראה עומס). נסה שוב, או בדוק חיבור בהגדרות.',
@@ -1322,6 +1336,7 @@ async function run({img,thumb,text,local,keep}){
   }catch(e){
     if(closedAt>t0)return;
     busy=false;
+    if(e.code==='quota0'){openPaywall();return}
     if(local&&local.items.length){            // AI failed: keep what the table knows
       local.items.forEach(x=>x.base={...x});
       openReview({meal:mealNow(),items:[...keep,...local.items,{name:local.unknown.join(' '),grams:100,kcal:0,protein:0,carbs:0,fat:0}]},-1);
@@ -1397,7 +1412,7 @@ function drawReview(){
       if(!o.items?.length){toast('לא הצלחתי לזהות. נסה שם אחר.');b.disabled=false;b.textContent='✨ חשב שוב';return}
       e.items=out.concat(o.items.map(x=>{const it={name:x.name,grams:r0(x.grams),kcal:r0(x.kcal),protein:r1(x.protein),carbs:r1(x.carbs),fat:r1(x.fat),done:1};it.base={...it};return it}));
       drawReview();toast('חושב ✓ בדוק ושמור');
-    }catch(er){if(closedAt>t0)return;busy=false;
+    }catch(er){if(closedAt>t0)return;busy=false;if(er.code==='quota0'){openPaywall();return}
       e.items=out.concat(ask);drawReview();
       toast((ERR[er.code]||ERR.srv).slice(0,70)+(out.length?' (מה שבמאגר חושב)':''));
       if(DIAG.last)$('#addPn').insertAdjacentHTML('beforeend',`<div class="err" dir="ltr" style="text-align:left">${esc(DIAG.last)}</div>`)}
@@ -1427,12 +1442,14 @@ function openSet(){
     </div>
     <h3 class="sub">יעד יומי (אפשר לשנות ידנית)</h3>
     <div class="g4" style="background:var(--soft);padding:10px;border-radius:18px">${MAC.map(([k,n])=>`<div><label>${n}${k==='kcal'?'':' (ג׳)'}</label><input type="number" inputmode="numeric" id="g_${k}" value="${g[k]}"></div>`).join('')}</div>
-    <h3 class="sub">${ic('sparkle',16)} חיבור ל-AI (Gemini)</h3>
+    <h3 class="sub">${ic('sparkle',16)} זיהוי אוכל ב-AI</h3>
+    ${NAT?`<div class="grp"><button class="li" id="sAI"><i>${ic('sparkle')}</i><div class="t">נשארו היום ${aiLeft()} זיהויים<span>${FREE_AI} ביום חינם · יתרת חבילות ${aiState().cr||0} · קנה עוד</span></div></button></div>
+    <details style="margin-top:8px"><summary class="note">מתקדם: מפתח Gemini משלך (בלי הגבלה)</summary>`:''}
     <input class="i" id="sKey" type="password" value="${esc(S.key)}" placeholder="הדבק כאן מפתח" autocomplete="off" spellcheck="false" dir="ltr">
     <div class="note">לא חובה — רוב המאכלים מחושבים בלי זה. צריך רק לצילום צלחת ולמאכלים חדשים.
       מפתח חינם: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> ← Create API key ← העתק לכאן.</div>
     <button class="btn sec w" id="sTest" style="margin-top:8px">בדוק חיבור</button>
-    <div class="note" id="sTestOut"></div>
+    <div class="note" id="sTestOut"></div>${NAT?'</details>':''}
     <button class="btn w" id="sOk" style="margin-top:14px">שמור</button>
     <h3 class="sub">עוד</h3>
     <div class="grp">
@@ -1444,8 +1461,9 @@ function openSet(){
     </div>
     <div class="note" style="color:var(--warn)">⚠️ מחיקת האפליקציה ממסך הבית מוחקת את כל הנתונים שלה. לפני מחיקה — שמור גיבוי.</div>
     <input type="file" id="resF" accept=".json,application/json" hidden>
-    <p class="note" style="text-align:center;margin-top:16px">גרסה 26</p>`;
+    <p class="note" style="text-align:center;margin-top:16px">גרסה 27</p>`;
   open('#shSet');
+  if($('#sAI'))$('#sAI').onclick=()=>{close('#shSet');openPaywall()};
   $('#sPlan').onclick=()=>{close('#shSet');openPlan()};
   $('#sProf').onclick=()=>{close('#shSet');openOnb(1)};
   $('#sTest').onclick=async()=>{const bt=$('#sTest');if(bt.disabled)return;bt.disabled=true;S.key=$('#sKey').value.trim();LS.set('kal-set',S);const o=$('#sTestOut');o.textContent='בודק…';await testConn(o);bt.disabled=false};
@@ -1523,7 +1541,10 @@ function drawOnb(st){
     <div class="goalbox"><div class="big2">${c.kcal.toLocaleString()}</div><div class="mut">קלוריות ביום</div>
       <div class="macros" style="margin-top:14px">${[['חלבון',c.protein,'var(--pr)'],['פחמימות',c.carbs,'var(--cb)'],['שומן',c.fat,'var(--ft)']].map(([n,v,col])=>`<div class="mac"><div class="n">${n}</div><div class="tr"><div class="fi" style="width:100%;background:${col}"></div></div><div class="v">${v} ג׳</div></div>`).join('')}</div></div>
     <p class="note" style="text-align:center">אפשר לשנות בכל רגע בהגדרות. זו הערכה לפי נוסחה מקובלת (Mifflin-St Jeor), לא ייעוץ רפואי.</p>${foot('מעולה, המשך',1)}`}
-  if(st===4)h=`<div class="hero2 img">${art('o_ai','')}</div><h1>צילום עם AI</h1><p class="lead">לא חובה. רוב המאכלים מחושבים בטלפון. AI צריך רק כדי לזהות צלחת מתמונה ומאכלים חדשים.</p>
+  if(st===4&&NAT)h=`<div class="hero2 img">${art('o_ai','')}</div><h1>צילום עם AI</h1><p class="lead">מצלמים את הצלחת — וה-AI מזהה ומחשב.</p>
+    <div class="goalbox"><div class="big2">${FREE_AI}</div><div class="mut">זיהויי AI חינם בכל יום</div></div>
+    <p class="note" style="text-align:center">מתחדשים כל בוקר. צריך יותר? אפשר לקנות חבילה בהגדרות. חיפוש, "המאגר שלי" ומעקב — ללא הגבלה.</p><input type="hidden" id="oKey" value="">${foot('סיום ✓',1)}`;
+  else if(st===4)h=`<div class="hero2 img">${art('o_ai','')}</div><h1>צילום עם AI</h1><p class="lead">לא חובה. רוב המאכלים מחושבים בטלפון. AI צריך רק כדי לזהות צלחת מתמונה ומאכלים חדשים.</p>
     <ol class="sc"><li>היכנס ל-<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a></li><li>לחץ <b>Create API key</b> והעתק</li><li>הדבק כאן:</li></ol>
     <input class="i" id="oKey" type="password" value="${esc(OB.key)}" placeholder="מפתח Gemini (חינם)" autocomplete="off" spellcheck="false" dir="ltr">${foot('סיום ✓',1,'דלג — אוסיף אחר כך')}`;
   $('#onbPn').innerHTML=`<div class="onb">${dots}${h}</div>`;
@@ -1546,7 +1567,7 @@ function drawOnb(st){
       const td=dk(new Date());if(!W[td]){W[td]=OB.w;LS.set('kal-w',W)}
       if(OB.goal==='lose'&&OB.target<OB.w){S.plan={target:OB.target,rate:OB.rate||.5,start:S.plan&&S.plan.start||{d:td,w:OB.w}};applyPlan()}
       if(OB.key)S.key=OB.key;S.onb=1;LS.set('kal-set',S);localStorage.removeItem('kal-models2');OB=null;close('#shOnb');render();scrollTo(0,0);toast('הכול מוכן! 🎉')};
-    nx.onclick=fin2;sk.onclick=fin2}
+    nx.onclick=fin2;if(sk)sk.onclick=fin2}
 }
 function openMy(){
   const list=Object.entries(MY).sort((a,b)=>b[1].n-a[1].n||a[1].name.localeCompare(b[1].name));
@@ -1949,6 +1970,35 @@ function openRemindNative(){
   open('#shAdd');
   $('#rmOk').onclick=async()=>{S.rem={w:$('#rW').checked?$('#rWt').value:null,l:$('#rL').checked?$('#rLt').value:null};LS.set('kal-set',S);await lnSchedule();close('#shAdd');toast('נשמר ✓')};
 }
+/* ---------- AI packs: consumable in-app purchases (App Store), credits kept on the phone ---------- */
+const PAY=(()=>{let ready=null;const pend={};
+  function init(){if(ready)return ready;ready=new Promise(res=>{const go=()=>{const C=window.CdvPurchase;if(!C||!C.store){res(false);return}
+      const {store,ProductType,Platform}=C;
+      store.register(Object.keys(PACKS).map(id=>({id,platform:Platform.APPLE_APPSTORE,type:ProductType.CONSUMABLE})));
+      store.when().approved(tx=>{for(const p of tx.products){const n=PACKS[p.id];if(!n)continue;const a=aiState();a.cr=(a.cr||0)+n;LS.set('kal-set',S);
+          if(pend[p.id]){pend[p.id](true);delete pend[p.id]}else toast(`נוספו ${n} זיהויי AI ✓`)}
+        tx.finish()});
+      store.error(()=>{for(const k in pend){pend[k](false);delete pend[k]}});
+      store.initialize([Platform.APPLE_APPSTORE]).then(()=>res(true)).catch(()=>res(false))};
+    if(window.CdvPurchase)go();else document.addEventListener('deviceready',go,{once:true});setTimeout(()=>res(false),15000)});return ready}
+  return {init,
+    price(id){try{const p=window.CdvPurchase.store.get(id);return p&&p.pricing&&p.pricing.price||''}catch(e){return ''}},
+    buy(id){return init().then(ok=>{if(!ok)return false;const st=window.CdvPurchase.store,pr=st.get(id),of=pr&&pr.getOffer();if(!of){toast('החנות לא זמינה כרגע');return false}
+      return new Promise(res=>{pend[id]=res;st.order(of).then(err=>{if(err&&pend[id]){delete pend[id];res(false)}})})})}}})();
+function openPaywall(){
+  const a=aiState(),left=aiLeft();
+  $('#addPn').innerHTML=`<div class="cih">${art('i_scanfood','')}</div><h2>זיהויי AI</h2>
+    <p class="note">כל יום כלולים <b>${FREE_AI} זיהויי AI חינם</b> (צילום צלחת או חישוב מאכל חדש), והם מתחדשים כל בוקר.
+    ${left>0?`נשארו לך היום <b>${left}</b>.`:'הזיהויים של היום נגמרו.'} מי שצריך יותר יכול לקנות חבילה — היא לא פגה ונשארת עד שמשתמשים בה.</p>
+    <div class="paks">${Object.entries(PACKS).map(([id,n])=>`<button class="pak" data-pk="${id}"><b>${n}</b><span>זיהויים</span><em id="pr_${id}">${PAY.price(id)||(id==='ai_50'?'₪9.90':'₪29.90')}</em></button>`).join('')}</div>
+    <p class="note">יתרת חבילות: <b>${a.cr||0}</b>. חיפוש במאגר, "המאגר שלי", צילום מסך של ערכים ומעקב — ללא הגבלה, גם בלי AI.</p>
+    <button class="btn sec w" id="pwC" style="margin-top:8px">סגור</button>`;
+  open('#shAdd');
+  $('#pwC').onclick=()=>close('#shAdd');
+  PAY.init().then(()=>{for(const id in PACKS){const e=document.getElementById('pr_'+id),p=PAY.price(id);if(e&&p)e.textContent=p}});
+  $('#addPn').querySelectorAll('[data-pk]').forEach(b=>b.onclick=async()=>{if(!NAT){toast('קנייה זמינה באפליקציה מה-App Store');return}
+    b.disabled=true;const ok=await PAY.buy(b.dataset.pk);b.disabled=false;if(ok){toast(`נוספו ${PACKS[b.dataset.pk]} זיהויים ✓`);openPaywall()}});
+}
 /* ---------- start ---------- */
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)render()});
 if(!S.onb&&(Object.keys(DB).length||S.key))S.onb=1;   // existing users skip the welcome
@@ -1956,6 +2006,7 @@ render();
 if(!S.onb){if(window.__PREF)prefRestore().then(ok=>{if(!ok)openOnb(0)});else setTimeout(()=>openOnb(0),300)}
 else{maybeCheckin();checkMilestones()}
 prefMirrorAll();
+if(NAT)setTimeout(()=>PAY.init(),2500);
 if(HK){hkAuto();document.addEventListener('visibilitychange',()=>{if(!document.hidden)hkAuto()})}
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>

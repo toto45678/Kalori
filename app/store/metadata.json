@@ -5,6 +5,22 @@
   "supportUrl": "https://toto45678.github.io/Kalori/support.html",
   "keywords": "קלוריות,דיאטה,ירידה במשקל,תזונה,חלבון,יומן אוכל,משקל,גירעון,כושר,בריאות",
   "promotionalText": "רושמים ארוחה בשניות, רואים כמה נשאר להיום, ויורדים במשקל בקצב בריא — עם יעד שלומד את הגוף שלך.",
-  "description": "קלוריות הוא יומן אכילה ומשקל פשוט ונעים בעברית, שנבנה סביב ירידה מבוקרת במשקל.\n\nרושמים מהר\n• חיפוש במאגר של מאכלים נפוצים, עם מנות וכמויות\n• \"המאגר שלי\" לומד מה אתה אוכל — הקבועים נשמרים בטאפ אחד\n• צילום צלחת עם בינה מלאכותית (רשות, עם מפתח Gemini חינמי)\n• קריאת ערכים תזונתיים מצילום מסך — בלי אינטרנט\n• תיאור ארוחה במילים או הזנה ידנית\n\nרואים במבט אחד\n• כמה קלוריות נשארו להיום, וחלבון, פחמימות ושומן\n• גירעון צפוי, ותקציב קלוריות שבועי גמיש\n• הדרך ליעד: משקל נוכחי, יעד ותאריך משוער\n\nיורדים בקצב בריא\n• שקילה יומית עם קו מגמה שמחליק תנודות של מים ומלח\n• יעד קלוריות שלומד כמה הגוף שלך באמת שורף\n• סיכום שבועי עם המלצה אחת ברורה — בלי קפיצות קיצוניות\n• הגנות: לא מתחת למינימום בטוח ולא יותר מ-1% ממשקל הגוף בשבוע\n\nמתחבר לאפליקציית הבריאות\n• קורא כמה שרפת (פעילות ומנוחה) ואת המשקל מהשעון או מהמשקל החכם\n• אימונים ידניים, היקפים ותמונות התקדמות\n• תזכורות לשקילת בוקר ולרישום בערב\n\nפרטיות מלאה\nאין חשבון, אין שרת ואין פרסומות. כל המידע נשמר רק בטלפון שלך, עם גיבוי לקובץ שבשליטתך.\n\nהאפליקציה אינה ייעוץ רפואי. ההערכות מבוססות על נוסחאות מקובלות; לפני שינוי משמעותי בתזונה כדאי להתייעץ עם רופא או דיאטנית.",
-  "reviewNotes": "Personal food & weight journal (Hebrew). No account, no server: all data is stored on the device.\n- HealthKit: read-only (active energy, basal energy, body mass) to show the day's calorie deficit; nothing is written to Health or sent anywhere. Tap the watch icon on the main card to grant access.\n- AI photo recognition is optional and uses the user's own free Google Gemini API key (Settings). Without a key every other feature works: food search with the built-in table, manual entry, screenshot OCR (on device), weigh-ins, goals, progress.\n- Not medical advice; the app enforces a minimum daily intake and a maximum pace of 1% body weight per week.\nTo try quickly: finish the 5-step welcome (any age/height/weight), tap + on a meal, search \"תפוח\" (apple) and tap +."
+  "description": "קלוריות הוא יומן אכילה ומשקל פשוט ונעים בעברית, שנבנה סביב ירידה מבוקרת במשקל.\n\nרושמים מהר\n• חיפוש במאגר של מאכלים נפוצים, עם מנות וכמויות\n• \"המאגר שלי\" לומד מה אתה אוכל — הקבועים נשמרים בטאפ אחד\n• צילום צלחת עם בינה מלאכותית — 5 זיהויים חינם בכל יום, וחבילות נוספות לרכישה בתוך האפליקציה\n• קריאת ערכים תזונתיים מצילום מסך — בלי אינטרנט\n• תיאור ארוחה במילים או הזנה ידנית\n\nרואים במבט אחד\n• כמה קלוריות נשארו להיום, וחלבון, פחמימות ושומן\n• גירעון צפוי, ותקציב קלוריות שבועי גמיש\n• הדרך ליעד: משקל נוכחי, יעד ותאריך משוער\n\nיורדים בקצב בריא\n• שקילה יומית עם קו מגמה שמחליק תנודות של מים ומלח\n• יעד קלוריות שלומד כמה הגוף שלך באמת שורף\n• סיכום שבועי עם המלצה אחת ברורה — בלי קפיצות קיצוניות\n• הגנות: לא מתחת למינימום בטוח ולא יותר מ-1% ממשקל הגוף בשבוע\n\nמתחבר לאפליקציית הבריאות\n• קורא כמה שרפת (פעילות ומנוחה) ואת המשקל מהשעון או מהמשקל החכם\n• אימונים ידניים, היקפים ותמונות התקדמות\n• תזכורות לשקילת בוקר ולרישום בערב\n\nפרטיות מלאה\nאין חשבון, אין שרת ואין פרסומות. כל המידע נשמר רק בטלפון שלך, עם גיבוי לקובץ שבשליטתך.\n\nהאפליקציה אינה ייעוץ רפואי. ההערכות מבוססות על נוסחאות מקובלות; לפני שינוי משמעותי בתזונה כדאי להתייעץ עם רופא או דיאטנית.",
+  "reviewNotes": "Personal food & weight journal (Hebrew). No account, no server: all data is stored on the device.\n- HealthKit: read-only (active energy, basal energy, body mass) to show the day's calorie deficit; nothing is written to Health or sent anywhere. Tap the watch icon on the main card to grant access.\n- AI photo recognition goes through our own small server (Cloudflare Worker -> Google Gemini). 5 AI recognitions per day are included; consumable packs (ai_50, ai_200) add more and never expire. Nothing is stored on the server except anonymous daily counters. Everything else works without AI: food search with the built-in table, manual entry, screenshot OCR (on device), weigh-ins, goals, progress.\n- Not medical advice; the app enforces a minimum daily intake and a maximum pace of 1% body weight per week.\nTo try quickly: finish the 5-step welcome (any age/height/weight), tap + on a meal, search \"תפוח\" (apple) and tap +.",
+  "iap": {
+    "ai_50": {
+      "name": "50 זיהויי AI",
+      "description": "50 זיהויי אוכל נוספים ב-AI, לא פגים",
+      "price": "9.90"
+    },
+    "ai_200": {
+      "name": "200 זיהויי AI",
+      "description": "200 זיהויי אוכל נוספים ב-AI, לא פגים",
+      "price": "29.90"
+    }
+  },
+  "appPrice": "19.90",
+  "territories": [
+    "ISR"
+  ]
 }
