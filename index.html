@@ -756,7 +756,7 @@ function thumbOf(dataUrl){return new Promise(ok=>{const im=new Image();im.onload
 
 /* ---------- Gemini (free tier) ---------- */
 const API='https://generativelanguage.googleapis.com/v1beta/';
-const AI_SERVER='https://kalori-ai.REPLACE.workers.dev';   // set at deploy (server/worker.js)
+const AI_SERVER='https://kalori-ai.charlie-remote-render-relay.workers.dev';   // set at deploy (server/worker.js)
 const FREE_AI=5, PACKS={ai_50:50,ai_200:200};
 function ownKey(){return (S.key||'').trim()}
 function useServer(){return !ownKey()&&NAT&&!/REPLACE/.test(AI_SERVER)}
