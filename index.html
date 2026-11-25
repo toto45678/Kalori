@@ -1787,7 +1787,7 @@ function openCheckin(r,ws){
     ${tips.map(([i,tx])=>`<div class="tip ${i==='warn'?'tw':''}">${ic(i,18)}<span>${tx}</span></div>`).join('')}
     ${newK?`<div class="goalbox" style="margin-top:12px"><div class="mut">${fast?'כדי להאט לקצב בריא':t.adaptive?`לפי ${t.n} ימי הרישום שלך הגוף שורף ≈ ${t.tdee.toLocaleString()} ליום`:'לפי המשקל המעודכן שלך'}</div>
       <div class="big2" style="font-size:2rem">${g.kcal.toLocaleString()} ← ${newK.toLocaleString()}</div><div class="mut">יעד יומי מוצע</div></div>
-      <div class="row" style="margin-top:12px"><button class="btn sec" id="ciKeep">השאר ${g.kcal}</button><button class="btn" id="ciOk">עדכן יעד</button></div>`
+      <div class="row" style="margin-top:12px"><button class="btn sec" id="ciKeep">השאר ${g.kcal.toLocaleString()}</button><button class="btn" id="ciOk">עדכן יעד</button></div>`
       :`<button class="btn w" id="ciKeep" style="margin-top:14px">יאללה, שבוע חדש</button>`}`;
   open('#shAdd');S.lastCheck=ws;LS.set('kal-set',S);
   $('#ciKeep').onclick=()=>close('#shAdd');
