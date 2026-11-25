@@ -11,7 +11,8 @@
     "@capacitor/core": "^8.0.0",
     "@capacitor/ios": "^8.0.0",
     "@capacitor/local-notifications": "^8.0.0",
-    "kalori-health": "file:plugins/kalori-health"
+    "kalori-health": "file:plugins/kalori-health",
+    "@capacitor/preferences": "^8.0.0"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
