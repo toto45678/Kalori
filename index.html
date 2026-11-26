@@ -245,6 +245,13 @@ details summary{cursor:pointer}
 .hdef .t1 b{color:var(--ink);font-weight:600}
 .hdef .t2{text-align:center;font-size:.76rem;color:var(--mut);margin-top:2px}
 .hdef.bad .t1 b,.hdef.bad .t2{color:#dc6803}
+.hdef{position:relative;cursor:pointer}.hdef .b3{display:flex;align-items:center;justify-content:center;gap:10px}
+.hdef .b3>div{display:flex;flex-direction:column;align-items:center;min-width:64px}.hdef .b3 span{font-size:.74rem;color:var(--mut)}
+.hdef .b3 b{font-size:1.12rem;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}.hdef .b3 b.ov{color:#dc6803}.hdef .b3 i{font-style:normal;color:var(--mut);font-size:1rem;margin-top:12px}
+.hdef .t2{margin-top:6px;line-height:1.5}.hdef .t2 b{font-weight:600;color:var(--ink)}.hdef .t2 svg{vertical-align:-2px}
+.hdef .hm{text-align:center;font-size:.72rem;color:var(--acc);margin-top:4px}
+.brk{border:1px solid var(--line);border-radius:14px;padding:4px 14px;margin-top:8px}.brk .br{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)}
+.brk .br:last-child{border:0}.brk .tt{font-weight:700}.brk .ok{color:var(--acc)}.brk .ov{color:#dc6803}
 .ib3{width:32px;height:32px;border-radius:10px;border:0;background:var(--soft);color:var(--mut);display:grid;place-items:center;flex:none}
 .road{display:flex;align-items:center;gap:12px;width:100%;margin-top:12px;padding:10px 12px;border:0;border-radius:16px;background:var(--soft);text-align:right}
 .road .rimg{width:40px;height:40px;object-fit:contain;flex:none}
@@ -402,54 +409,69 @@ function dayFrac(){const n=new Date();return (n.getHours()*60+n.getMinutes())/14
 // {rest,act,tot,restEst} or null when nothing is known about that day
 function woKcal(d){return (WO[d]||[]).reduce((s,w)=>s+(+w.kcal||0),0)}
 function woExtra(d){return (WO[d]||[]).reduce((s,w)=>s+(w.extra===false?0:(+w.kcal||0)),0)}   // what the watch did not measure
-function burnOf(d){
-  const f=FIT[d],today=d===dk(new Date()),b=bmr(),wk=woExtra(d);
-  if(f&&f.tot>0)return {rest:0,act:f.tot+wk,tot:f.tot+wk,wo:wk,restEst:false,noRest:false,t:f.t,total:1};   // the watch's total (active + resting): no estimate on top
-  let rest=f&&f.rest>0?f.rest:null,act=(f?(+f.act||0):0)+wk,restEst=false;
-  if(rest==null&&b){rest=today?b*dayFrac():b;restEst=true}
-  if(rest==null&&!f&&!wk)return null;
-  return {rest:rest||0,act,tot:(rest||0)+act,wo:wk,restEst,noRest:rest==null,t:f&&f.t};
-}
-// the daily deficit uses ONE source: the learned burn (weight trend + log) when known, else the formula; the watch is shown, not counted twice
-function baseBurn(){const t=planTarget();return t?t.tdee:(formulaTdee()||null)}
-function dayDeficit(d,eaten){const b=baseBurn();if(b==null){const x=burnOf(d);return x&&!x.noRest?x.tot-eaten:null}return b+woExtra(d)-eaten}
-function renderBurn(t){
+// ONE burn number per day. Watch day (Apple Health resting + active, or the watch total) → the watch, plus workouts it did not measure.
+// No watch → the body's estimate (learned from weight + log, else the formula). Today: "so far" + "end of day" (resting so far scaled to 24 h).
+function fitFrac(f){const t=(f&&f.t)||'',m=t.match(/^(\d+):(\d+)/);return m?Math.max(.04,(+m[1]*60+ +m[2])/1440):dayFrac()}
+function burnDay(d){
+  const f=FIT[d],today=d===dk(new Date()),wk=woExtra(d),tW=f&&f.t;
+  if(f&&f.tot>0){const tot=f.tot+wk;return {src:'watch',rest:0,act:0,watch:f.tot,wo:wk,tot,end:today&&fitFrac(f)<.97?f.tot/fitFrac(f)+wk:tot,t:tW,today}}
+  if(f&&f.rest>0){const fr=today?fitFrac(f):1,tot=f.rest+(+f.act||0)+wk;
+    return {src:'watch',rest:f.rest,act:+f.act||0,watch:f.rest+(+f.act||0),wo:wk,tot,end:today&&fr<.97?f.rest/fr+(+f.act||0)+wk:tot,t:tW,today}}
   const base=baseBurn();
-  if(base!=null){
-    const el=$('#burn'),today=day===dk(new Date()),hr=new Date().getHours(),fin=!today||hr>=20,wk=woExtra(day),bu=burnOf(day);
-    const df=fin?base+wk-t.kcal:base+wk-S.goal.kcal,hot=fin&&(df>1000||(t.kcal>0&&t.kcal<minKcal()*.8)),over=df<0;
-    $('#heroDef').innerHTML=`<div class="hdef ${hot||over?'bad':''}">
-        <div class="t1"><span>${fin?(over?'עודף היום':'גירעון היום'):'גירעון צפוי'}</span><b>≈ ${r0(Math.abs(df)).toLocaleString()} קל׳</b>
-          ${today?`<button class="ib3" id="bSync" aria-label="סנכרן שריפה מהשעון">${ic('watch',18)}</button>`:''}<button class="ib3" id="bFitMan" aria-label="הזן שריפה ידנית">${ic('pencil',17)}</button></div>
-        <div class="t2">${hot?(df>1000?'מהר מדי לירידה מבוקרת — כדאי לאכול קצת יותר':'אכלת מעט מאוד היום'):`הגוף שורף ≈ ${r0(base).toLocaleString()}${wk?` + אימונים ${r0(wk)}`:''}${bu&&(bu.t||bu.total)?` · השעון ${r0(bu.tot).toLocaleString()}`:''}`}</div></div>`;
-    el.innerHTML='';renderWoCard(el);
-    if($('#bSync'))$('#bSync').onclick=syncFit;$('#bFitMan').onclick=()=>openFitSheet(false);
-    return;
-  }
-  $('#heroDef').innerHTML='';renderBurnOld(t);
+  if(base){const fr=today?dayFrac():1,act=f?(+f.act||0):0;   // active only (old shortcut): resting from the estimate
+    if(act>0){const rest=bmr()||base*.8;return {src:'mix',rest:rest*fr,act,wo:wk,tot:rest*fr+act+wk,end:rest+act+wk,t:tW,today}}
+    return {src:'est',base,wo:wk,tot:base*fr+wk,end:base+wk,today}}
+  return null;
 }
-function renderBurnOld(t){
-  const el=$('#burn'),bu=burnOf(day),today=day===dk(new Date());
-  if(bu&&!bu.noRest){
-    const df=bu.tot-t.kcal;
-    el.innerHTML=`<div class="card burnC"><div class="ic ${df>=0?'fl':'wr'}">${ic(df>=0?'flame':'warn',24)}</div>
-      <div class="tx"><span class="mut">${df>=0?'גירעון':'עודף'}${today?' עד עכשיו':''}</span><b class="${df>=0?'ok':'bad'}">${r0(Math.abs(df)).toLocaleString()} קל׳</b>
-      <span class="mut">שרפת ${r0(bu.tot).toLocaleString()}${bu.wo?` (כולל אימונים ${r0(bu.wo)})`:bu.total?' (סה״כ מהשעון)':bu.restEst?' (מנוחה בחישוב)':''}${bu.t?' · עודכן '+bu.t:''}</span></div>
-      <div class="bt">${today?`<button class="pill g" id="bSync">${ic('watch',17)} סנכרן</button>`:''}<button class="pill ib2" id="bFitMan" aria-label="הזן ידנית">${ic('pencil',17)}</button></div></div>`;
-  }else{
-    el.innerHTML=`<div class="card burnC"><div class="ic wt">${ic('watch',24)}</div>
-      <div class="tx"><b style="font-size:.95rem">כמה שרפת היום?</b><span class="mut">${bu&&bu.noRest?'פעילות '+r0(bu.act)+' · הוסף פרופיל לחישוב גירעון':'חבר את השעון כדי לראות גירעון'}</span></div>
-      <div class="bt">${today?'<button class="pill g" id="bSync">חבר</button>':''}<button class="pill ib2" id="bFitMan" aria-label="הזן ידנית">${ic('pencil',17)}</button></div></div>`;
+function burnOf(d){const x=burnDay(d);return x?{tot:x.end,noRest:false}:null}   // full-day burn (today: expected)
+function baseBurn(){const t=planTarget();return t?t.tdee:(formulaTdee()||null)}
+function dayDeficit(d,eaten){const x=burnDay(d);return x?x.end-eaten:null}
+function renderBurn(t){
+  const el=$('#burn'),x=burnDay(day),today=day===dk(new Date()),eat=t.kcal;
+  if(!x){$('#heroDef').innerHTML=`<div class="hdef" id="hdefB"><div class="t2">${today?`<button class="pill g" id="bSync">${ic('watch',16)} חבר שעון</button> כדי לראות כמה שרפת`:'אין נתוני שריפה ליום הזה'}</div></div>`;}
+  else{
+    const now=x.tot-eat,end=x.end-eat,live=today&&x.end-x.tot>30,hot=!live?end>1000:false,over=(live?end:now)<0;
+    const dV=live?end:now,low=eat>0&&eat<minKcal()*.8&&(!today||new Date().getHours()>=20);
+    const src=x.src==='est'?`הערכה לפי הגוף שלך${x.wo?' + אימונים':''}`:`⌚ מהשעון${x.t?' · עודכן '+x.t:''}${x.wo?' + אימונים ידניים':''}`;
+    $('#heroDef').innerHTML=`<div class="hdef ${hot||low?'bad':''}" id="hdefB" role="button" aria-label="פירוט שריפה">
+      <div class="b3"><div><span>${live?'שרפת עד עכשיו':'שרפת'}</span><b>${r0(x.tot).toLocaleString()}</b></div><i>−</i>
+        <div><span>אכלת</span><b>${r0(eat).toLocaleString()}</b></div><i>=</i>
+        <div><span>${now<0?'עודף':'גירעון'}</span><b class="${now<0?'ov':''}">${r0(Math.abs(now)).toLocaleString()}</b></div></div>
+      <div class="t2">${src}${live?` · <b>בסוף היום ≈ ${over?'עודף':'גירעון'} ${r0(Math.abs(end)).toLocaleString()}</b>`:''}
+        ${hot?'<br>מהר מדי לירידה מבוקרת — כדאי לאכול קצת יותר':low?'<br>אכלת מעט מאוד היום':''}</div>
+      <div class="hm">לפירוט ולסנכרון ›</div></div></div>`;
   }
-  renderWoCard(el);
+  el.innerHTML='';renderWoCard(el);
+  if($('#bSync'))$('#bSync').onclick=ev=>{ev.stopPropagation();syncFit()};
+  if($('#bFitMan'))$('#bFitMan').onclick=ev=>{ev.stopPropagation();openBurnInfo()};
+  if($('#hdefB')&&x)$('#hdefB').onclick=openBurnInfo;
+}
+// the breakdown: where the number comes from, in plain words
+function openBurnInfo(){
+  const x=burnDay(day),eat=totals(DB[day]).kcal,today=day===dk(new Date()),R=(l,v,c)=>`<div class="br"><span>${l}</span><b class="${c||''}">${v}</b></div>`;
+  if(!x){openFitSheet(false);return}
+  const rows=x.src==='est'?R('הגוף שלך שורף ביום (הערכה)',r0(x.base).toLocaleString()):
+    x.src==='mix'?R('מנוחה (חישוב לפי הפרופיל)',r0(x.rest).toLocaleString())+R('פעילות (שעון)',r0(x.act).toLocaleString()):
+    x.watch&&!x.rest?R('השעון: סה״כ',r0(x.watch).toLocaleString()):R('מנוחה (שעון)',r0(x.rest).toLocaleString())+R('פעילות + אימונים (שעון)',r0(x.act).toLocaleString());
+  const df=x.tot-eat,de=x.end-eat,live=today&&x.end-x.tot>30;
+  $('#addPn').innerHTML=`<h2>כמה שרפת ${today?'היום':''}</h2>
+    <div class="brk">${rows}${x.wo?R('אימונים שהשעון לא מדד',r0(x.wo).toLocaleString()):''}
+      ${R(live?'סה״כ שרפת עד עכשיו':'סה״כ שרפת',r0(x.tot).toLocaleString(),'tt')}
+      ${R('אכלת',r0(eat).toLocaleString())}
+      ${R(df<0?'עודף':'גירעון',r0(Math.abs(df)).toLocaleString(),'tt '+(df<0?'ov':'ok'))}
+      ${live?R('צפי לסוף היום',`${de<0?'עודף':'גירעון'} ≈ ${r0(Math.abs(de)).toLocaleString()}`):''}</div>
+    <p class="note">${x.src==='est'?'אין נתונים מהשעון ליום הזה, אז זו הערכה. אחרי שתחבר את השעון המספר יגיע ממנו.':'אימון שהשעון מדד כבר כלול בשריפה. רק אימון שהשעון לא מדד (למשל בלי השעון) נוסף בנפרד.'}
+      ${live?' "צפי לסוף היום" = מה שהגוף ישרוף במנוחה עד חצות + מה שכבר עשית.':''}</p>
+    <div class="row" style="margin-top:12px">${today&&(HK||S.scReady)?`<button class="btn sec" id="biS">${ic('watch',16)} סנכרן עכשיו</button>`:''}<button class="btn sec" id="biM">הזן ידנית</button><button class="btn" id="biC">סגור</button></div>`;
+  open('#shAdd');
+  if($('#biS'))$('#biS').onclick=()=>{close('#shAdd');syncFit()};
+  $('#biM').onclick=()=>openFitSheet(false);$('#biC').onclick=()=>close('#shAdd');
 }
 function renderWoCard(el){
   const ws=WO[day]||[];
   el.innerHTML+=`<div class="card woC ${ws.length?'':'emp'}"><div class="wh"><span class="mi im" style="--mb:#dcfae6">${art('i_shoe','')}</span><b>אימונים</b>
     <span class="k">${ws.length?r0(woKcal(day))+' קל׳':''}</span><button class="add" id="bWo" aria-label="הוסף אימון">${ic('plus',18,2.4)}</button></div>
-    ${ws.length?ws.map((w,i)=>`<div class="wr2" data-wo="${i}"><span>${esc(w.type)}${w.min?` · ${w.min} דק׳`:''}${w.extra===false?' <small class="mut">(נמדד בשעון)</small>':''}</span><b>${r0(w.kcal)}</b></div>`).join(''):''}</div>`;
-  if($('#bSync'))$('#bSync').onclick=syncFit;
-  $('#bFitMan').onclick=()=>openFitSheet(false);
+    ${ws.length?ws.map((w,i)=>`<div class="wr2" data-wo="${i}"><span>${esc(w.type)}${w.min?` · ${w.min} דק׳`:''}${w.extra===false?' <small class="mut">(כבר בשעון)</small>':''}</span><b>${r0(w.kcal)}</b></div>`).join(''):''}</div>`;
   $('#bWo').onclick=()=>openWorkout(-1);
   el.querySelectorAll('[data-wo]').forEach(r=>r.onclick=()=>openWorkout(+r.dataset.wo));
 }
@@ -467,7 +489,7 @@ function openWorkout(i){
       <div><div class="f" style="margin:0">עצימות</div><div class="sel" id="woL">${['קלה','בינונית','גבוהה'].map((n,k)=>`<button data-l="${k}" class="${k===(o.lvl??1)?'on':''}">${n}</button>`).join('')}</div></div></div>
     <label class="f">קלוריות שנשרפו<input class="i" id="woK" type="number" inputmode="numeric" value="${o.kcal??''}" placeholder=""></label>
     <div class="note" id="woN"></div>
-    <label class="rrow" style="border:0"><input type="checkbox" id="woX" ${o.extra!==false?'checked':''}><span>השעון <b>לא</b> מדד את האימון הזה — להוסיף לשריפה</span></label>
+    <label class="rrow" style="border:0"><input type="checkbox" id="woX" ${o.extra!==false?'checked':''}><span>להוסיף לשריפה (השעון <b>לא</b> מדד את האימון הזה)</span></label>
     <div class="row" style="margin-top:12px">${cur0?'<button class="btn del" id="woDel">מחק</button>':''}<button class="btn" id="woOk">שמור</button></div>`;
   open('#shAdd');
   let typed=o.src==='dev';
@@ -1461,7 +1483,7 @@ function openSet(){
     </div>
     <div class="note" style="color:var(--warn)">⚠️ מחיקת האפליקציה ממסך הבית מוחקת את כל הנתונים שלה. לפני מחיקה — שמור גיבוי.</div>
     <input type="file" id="resF" accept=".json,application/json" hidden>
-    <p class="note" style="text-align:center;margin-top:16px">גרסה 28</p>`;
+    <p class="note" style="text-align:center;margin-top:16px">גרסה 29</p>`;
   open('#shSet');
   if($('#sAI'))$('#sAI').onclick=()=>{close('#shSet');openPaywall()};
   $('#sPlan').onclick=()=>{close('#shSet');openPlan()};
