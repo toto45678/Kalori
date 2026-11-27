@@ -471,9 +471,9 @@ function renderWoCard(el){
   const ws=WO[day]||[];
   el.innerHTML+=`<div class="card woC ${ws.length?'':'emp'}"><div class="wh"><span class="mi im" style="--mb:#dcfae6">${art('i_shoe','')}</span><b>אימונים</b>
     <span class="k">${ws.length?r0(woKcal(day))+' קל׳':''}</span><button class="add" id="bWo" aria-label="הוסף אימון">${ic('plus',18,2.4)}</button></div>
-    ${ws.length?ws.map((w,i)=>`<div class="wr2" data-wo="${i}"><span>${esc(w.type)}${w.min?` · ${w.min} דק׳`:''}${w.extra===false?' <small class="mut">(כבר בשעון)</small>':''}</span><b>${r0(w.kcal)}</b></div>`).join(''):''}</div>`;
+    ${ws.length?ws.map((w,i)=>`<div class="wr2" data-wo="${i}"><span>${esc(w.type)}${w.min?` · ${w.min} דק׳`:''}${w.src==='hk'?' <small class="mut">⌚ מהשעון</small>':w.extra===false?' <small class="mut">(כבר בשעון)</small>':''}</span><b>${r0(w.kcal)}</b></div>`).join(''):''}</div>`;
   $('#bWo').onclick=()=>openWorkout(-1);
-  el.querySelectorAll('[data-wo]').forEach(r=>r.onclick=()=>openWorkout(+r.dataset.wo));
+  el.querySelectorAll('[data-wo]').forEach(r=>r.onclick=()=>{const w=ws[+r.dataset.wo];if(w&&w.src==='hk'){toast('נמדד בשעון ומתעדכן לבד · כבר כלול בשריפה');return}openWorkout(+r.dataset.wo)});
 }
 /* ---------- manual workouts: type + minutes + effort → estimated kcal (net, above resting), or the device's number ---------- */
 const WOT=[['הליכה',[2.8,3.5,5]],['ריצה',[7,9.8,11.5]],['אופניים',[5.5,7.5,10]],['שחייה',[5.8,7,9.8]],['חדר כושר',[3.5,5,6]],['HIIT / קרוספיט',[6,8,10]],
@@ -514,20 +514,29 @@ async function prefMirrorAll(){const P=window.__PREF;if(!P)return;for(let i=0;i<
 async function prefRestore(){const P=window.__PREF;if(!P)return false;try{const {keys}=await P.keys();let n=0;
   for(const k of keys||[])if(k.startsWith('kal-')){const {value}=await P.get({key:k});if(value!=null){localStorage.setItem(k,value);n++}}
   if(n&&localStorage.getItem('kal-set')){location.reload();return true}}catch(e){}return false}
-async function hkAuth(){if(!HK)return false;if(S.hkAsked)return true;try{await HK.requestAuth();S.hkAsked=1;LS.set('kal-set',S);return true}catch(e){return false}}
+async function hkAuth(){if(!HK)return false;if(S.hkAsked>=2)return true;try{await HK.requestAuth();S.hkAsked=2;LS.set('kal-set',S);return true}catch(e){return false}}
 // pull today's (or any day's) burn straight from Apple Health — active + resting, measured by the watch
 async function hkSyncDay(d,quiet){
   if(!(await hkAuth()))return false;
   try{const r=await HK.dayEnergy({date:d});
     if(!(r.active>0||r.basal>0)){if(!quiet)toast('אין נתוני שריפה בבריאות ליום הזה (או שאין הרשאה: הגדרות ← בריאות ← גישה לנתונים ← קלוריות)');return false}
     if(r.basal>0)putFit(d,r.active,r.basal);else putFit(d,r.active,0);
+    await hkWorkouts(d);
     if(!quiet){render();toast('סונכרן מהבריאות ✓ '+r0((r.active||0)+(r.basal||0))+' קל׳')}return true}
   catch(e){if(!quiet)toast('לא הצלחתי לקרוא מהבריאות');return false}
 }
+const HKWT={37:'ריצה',52:'הליכה',13:'אופניים',46:'שחייה',50:'כוח',20:'כוח פונקציונלי',63:'HIIT',57:'יוגה',66:'פילאטיס',16:'אליפטיקל',35:'חתירה',
+  24:'הליכה בשטח',14:'ריקוד',77:'ריקוד',78:'ריקוד',48:'טניס',79:'פיקלבול',41:'כדורגל',6:'כדורסל',59:'אימון ליבה',73:'קרדיו',44:'מדרגות',11:'קרוספיט',
+  80:'שחרור',62:'גמישות',58:'אומנויות לחימה',8:'אגרוף',29:'מדיטציה',71:'כיסא גלגלים',70:'כיסא גלגלים',9:'טיפוס',3000:'אימון'};
+async function hkWorkouts(d){if(!HK||!HK.dayWorkouts)return;
+  try{const r=await HK.dayWorkouts({date:d}),L=(r&&r.list)||[];
+    const keep=(WO[d]||[]).filter(w=>w.src!=='hk'),got=L.filter(w=>w.min>0||w.kcal>0).map(w=>({type:HKWT[w.type]||'אימון',min:w.min||0,kcal:w.kcal||0,src:'hk',hid:w.id,extra:false,time:w.start||''}));
+    const all=keep.concat(got).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+    if(all.length)WO[d]=all;else delete WO[d];LS.set('kal-wo',WO)}catch(e){}}
 async function hkWeight(){if(!(await hkAuth()))return null;try{const r=await HK.latestWeight();return r&&r.kg>25?r:null}catch(e){return null}}
 // on every open: refresh today's burn, and take a new weigh-in from a smart scale if there is one
 async function hkAuto(){
-  if(!HK||!S.hkAsked)return;
+  if(!HK||!S.hkAsked)return;if(S.hkAsked<2)await hkAuth();
   const today=dk(new Date());await hkSyncDay(today,true);
   const y=addDays(today,-1);if(!FIT[y]||FIT[y].t<'23:00')await hkSyncDay(y,true);   // finish yesterday with its full total
   const w=await hkWeight();if(w&&w.date&&!W[w.date]&&w.date>=addDays(today,-3)){W[w.date]=Math.round(w.kg*10)/10;LS.set('kal-w',W);S.prof.w=Math.round(curWeight()*10)/10;LS.set('kal-set',S)}
@@ -1483,7 +1492,7 @@ function openSet(){
     </div>
     <div class="note" style="color:var(--warn)">⚠️ מחיקת האפליקציה ממסך הבית מוחקת את כל הנתונים שלה. לפני מחיקה — שמור גיבוי.</div>
     <input type="file" id="resF" accept=".json,application/json" hidden>
-    <p class="note" style="text-align:center;margin-top:16px">גרסה 29</p>`;
+    <p class="note" style="text-align:center;margin-top:16px">גרסה 30</p>`;
   open('#shSet');
   if($('#sAI'))$('#sAI').onclick=()=>{close('#shSet');openPaywall()};
   $('#sPlan').onclick=()=>{close('#shSet');openPlan()};
